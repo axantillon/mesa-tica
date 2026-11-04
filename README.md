@@ -12,6 +12,6 @@ Pickup ordering for one restaurant. Guests browse the menu, place an order and f
 6. [Product models](design/README.md): boundaries, concepts, lifecycle and interaction sequences.
 7. [Acceptance criteria](context/acceptance.md) and [traceability](design/traceability.md): observable outcomes and quality targets.
 
-[KICKOFF.md](KICKOFF.md) is the implementation prompt. Technical and visual implementation choices are open; the documents define the product's behavior and content.
+[KICKOFF.md](KICKOFF.md) is the implementation prompt, including documentation, milestone commits and draft-PR progress when GitHub access is available. Technical and visual implementation choices are open; the documents define the product's behavior and content.
 
 The specification governs business rules; the restaurant/menu document supplies concrete content. Stories, experience guidance and conceptual diagrams explain those requirements. In a minor ambiguity, preserve the specification's behavior and make a practical choice. Quality targets require measurement and are not a prerequisite for beginning implementation.
