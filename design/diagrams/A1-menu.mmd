@@ -1,17 +1,30 @@
 sequenceDiagram
     autonumber
     actor Customer
-    participant Product as Mesa Tica
-    Customer->>Product: Open menu
-    Product-->>Customer: Dishes, descriptions, prices and availability
-    alt Restaurant open
-    Product-->>Customer: Pickup ordering available
-    else Restaurant closed
-    Product-->>Customer: Browsing allowed, next opening shown, submission unavailable
+    participant UI as CustomerView
+    participant C as MenuController
+    participant S as MenuService
+    participant M as MenuStore
+    participant R as RestaurantStore
+    participant P as OpeningPolicy
+    Customer->>UI: Open menu
+    UI->>C: getMenu(context)
+    C->>S: getMenu(now)
+    S->>M: readCurrentMenu()
+    M-->>S: Dish names, descriptions, prices and availability
+    S->>R: readRestaurant()
+    R-->>S: Hours, timezone and pickup information
+    S->>P: isOpen(restaurant, now) and nextOpening(restaurant, now)
+    P-->>S: Opening state and next opening if any
+    S-->>C: Menu presentation
+    C-->>UI: Menu and opening information
+    UI-->>Customer: Browse all dishes and prices
+    alt Dish available
+    Customer->>UI: Add dish
+    UI->>UI: Add or increase quantity in cart
+    else Dish unavailable
+    UI-->>Customer: Explain unavailable, no addition
     end
-    Customer->>Product: Choose a dish
-    alt Available
-    Product-->>Customer: Add to cart
-    else Unavailable
-    Product-->>Customer: Explain unavailable, no addition
+    opt Restaurant closed
+    UI-->>Customer: Cart preparation allowed, submission disabled, next-opening guidance
     end

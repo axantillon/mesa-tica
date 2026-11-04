@@ -2,12 +2,15 @@ classDiagram
     class Restaurant {
         name
         localOpeningHours
+        pickupLocation
         pickupInstructions
         contactInformation
     }
     class MenuItem {
         name
         description
+        group
+        displayOrder
         price
         availability
     }
@@ -52,5 +55,5 @@ classDiagram
     Order "1" --> "1..*" OrderedItem : preserves
     Order "1" --> "0..*" StatusChange : records staff changes
     Employee "1" --> "0..*" StatusChange : performs
-    note for Order "Conceptual product information only. No identifiers, storage formats, runtime classes or authentication design are prescribed."
+    note for Order "Conceptual product information. Detailed software responsibilities are defined in the logical design, with concrete representation chosen during implementation."
     note for OrderedItem "Accepted names and prices remain unchanged when the menu changes."

@@ -1,23 +1,56 @@
 sequenceDiagram
     autonumber
     actor Employee
-    participant Product as Mesa Tica
-    Employee->>Product: Sign in and open staff queue
-    alt Authorized employee
-    Product-->>Employee: Active orders oldest first, last successful refresh time
-    Employee->>Product: Choose status filter
-    Product-->>Employee: Matching orders
-    loop While queue open and access valid
-    Product-->>Employee: Automatically show matching new orders/status changes, preserve filter
+    participant UI as StaffView
+    participant A as AuthController
+    participant Access as AccessService
+    participant I as IdentityStore
+    participant U as UpdateCoordinator
+    participant C as StaffOrderController
+    participant S as OrderService
+    participant O as OrderStore
+    Employee->>UI: Sign in
+    UI->>A: signIn(credentials)
+    A->>Access: signIn(credentials)
+    Access->>I: authenticate(credentials)
+    I-->>Access: Access context or generic failure
+    Access-->>A: Sign-in outcome
+    A-->>UI: Actual sign-in outcome
+    alt Sign-in failed
+    UI-->>Employee: Generic correction, no order data
+    else Authorized access available
+    UI->>U: observe(queue with selected filter, view)
+    loop Automatic refresh while queue open
+    U->>C: listQueue(context, filter)
+    C->>Access: requireStaff(context)
+    Access->>I: resolveAccess(context)
+    I-->>Access: Current identity and authorization
+    alt Authorized
+    Access-->>C: Employee
+    C->>S: listQueue(filter)
+    S->>O: listOrders(filter)
+    O-->>S: Matching orders oldest first with stable tie-break
+    S-->>C: Queue snapshot
+    C-->>U: Successful current information
+    U-->>UI: Preserve filter, update successful check, clear stale warning
+    else Access denied or expired
+    Access-->>C: Denial without staff data
+    C-->>U: Sign-in required or access denied
+    U-->>UI: Stop protected updates and explain access state
     end
-    alt Updates fail
-    Product-->>Employee: Keep last information/time, show stale warning
-    else Updates recover
-    Product-->>Employee: Current queue, clear stale warning
     end
-    opt Access expires
-    Product-->>Employee: Sign in again before viewing or changing staff data
+    opt Refresh fails for connection or service reasons
+    U-->>UI: Keep prior data/time, show stale warning
     end
-    else Access denied
-    Product-->>Employee: Sign-in or access-denied guidance, no staff order data
+    opt Connection recovers with valid access
+    UI->>U: recover(queue target)
+    U->>U: refresh(target) through same authorized read
+    U-->>UI: Clear warning only after successful current information
+    end
+    end
+    opt Employee signs out
+    UI->>A: signOut(context)
+    A->>Access: signOut(context)
+    Access->>I: revokeAccess(context)
+    UI->>U: stop(protected targets)
     end

@@ -1,15 +1,21 @@
 sequenceDiagram
     autonumber
     actor Customer
-    participant Product as Mesa Tica
-    Customer->>Product: Review cart
-    Product-->>Customer: Quantities, prices, subtotals and total
-    Customer->>Product: Edit quantity or remove item
-    alt Valid edit
-    Product-->>Customer: Updated cart and total
+    participant UI as CustomerView
+    participant Cart as Cart
+    Customer->>UI: Review or edit cart
+    alt Valid positive whole-number quantity
+    UI->>Cart: changeQuantity(item, quantity)
     else Invalid quantity
-    Product-->>Customer: Correction near affected item, no silent replacement
+    UI-->>Customer: Correction near affected item, no silent coercion
     end
-    alt Cart empty
-    Product-->>Customer: Empty-cart guidance, cannot place order
+    opt Explicit removal chosen
+    UI->>Cart: remove(item)
     end
+    UI->>Cart: calculateTotal()
+    Cart-->>UI: Current selected quantities, subtotals and total
+    UI-->>Customer: Updated review
+    opt Cart empty
+    UI-->>Customer: Empty-cart guidance, cannot submit
+    end
+    Note over UI,Cart: Cart continuity stays within the same browser. Server-side acceptance still checks every submitted choice.

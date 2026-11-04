@@ -1,22 +1,61 @@
 sequenceDiagram
     autonumber
     actor Employee
-    participant Product as Mesa Tica
-    Employee->>Product: Choose permitted next status
-    opt Cancel order chosen
-    Product-->>Employee: Request reason and final confirmation, reason is customer-visible
-    Employee->>Product: Enter reason and confirm or dismiss
+    participant UI as StaffView
+    participant C as StaffOrderController
+    participant Access as AccessService
+    participant S as OrderService
+    participant L as OrderLifecycle
+    participant O as OrderStore
+    Employee->>UI: Choose permitted next action
+    opt Cancellation chosen
+    UI-->>Employee: Request reason and final confirmation, reason customer-visible
+    Employee->>UI: Enter reason and confirm or dismiss
     end
     alt Cancellation dismissed
-    Product-->>Employee: No change, retain typed reason in current detail view
-    else Employee proceeds with a status action
-    alt Stale action or another employee changed the order
-    Product-->>Employee: Reject change, show current state, no automatic retry
-    Employee->>Product: Review before deliberately choosing a still-valid action
-    else Invalid transition or missing cancellation reason
-    Product-->>Employee: Explain correction, leave order unchanged
-    else Valid authorized change
-    Product-->>Employee: Confirm current status, record employee and time
+    UI-->>Employee: No request, no change, retain reason in current view
+    else Action explicitly submitted
+    UI->>C: changeStatus(context, number, observedRevision, target, reason)
+    C->>Access: requireStaff(context)
+    alt Access denied
+    Access-->>C: Denial
+    C-->>UI: No change, access guidance
+    else Authorized
+    Access-->>C: Employee
+    C->>S: changeStatus(number, revision, target, reason, employee)
+    S->>O: readOrder(number)
+    alt Order unavailable
+    O-->>S: Not found
+    S-->>C: Unavailable order, no change
+    else Current order available
+    O-->>S: Current detail and revision
+    alt Requested revision already stale
+    S-->>C: Conflict with current detail, no change
+    else Revision matches current read
+    S->>L: validateChange(currentStatus, target, reason)
+    alt Invalid action or blank cancellation reason
+    L-->>S: Correction
+    S-->>C: Rejected, no change
+    else Valid proposed action
+    L-->>S: Proposed transition permitted
+    S->>O: changeIfCurrent(number, revision, target, reason, employee)
+    Note over S,O: One indivisible decision checks current revision AND lifecycle/reason, then saves status and employee/time history together. Two same-revision changes cannot both succeed.
+    alt Observed state no longer current
+    O-->>S: Conflict and current detail
+    S-->>C: No overwrite, current state and explanation
+    else Accepted
+    O-->>S: New current detail and history
+    S-->>C: Accepted change
     end
     end
-    Note over Employee,Product: Collected and Cancelled are final. Uncertain outcomes are refreshed before another deliberate action.
+    end
+    end
+    C-->>UI: Actual outcome
+    UI-->>Employee: Accepted result, correction or explicit conflict review
+    end
+    end
+    opt Write outcome uncertain
+    UI->>C: getDetail(context, number) through authorized read
+    C-->>UI: Actual current state/history or unavailable
+    UI-->>Employee: Review before any new deliberate action, no automatic write retry
+    end

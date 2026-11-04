@@ -1,11 +1,22 @@
 sequenceDiagram
     autonumber
     actor Customer
-    participant Product as Mesa Tica
-    Customer->>Product: Open saved private link
+    participant UI as TrackingView
+    participant C as TrackingController
+    participant S as TrackingService
+    participant O as OrderStore
+    Customer->>UI: Open saved private link
+    UI->>C: getSummary(privateLink)
+    C->>S: getSnapshot(privateLink)
+    S->>O: findByPrivateLink(privateLink)
     alt Valid link
-    Product-->>Customer: Associated order number, accepted contents/total and status
+    O-->>S: Associated accepted order
+    S-->>C: Public summary, excluding employee identities/access details
+    C-->>UI: Safe order snapshot
+    UI-->>Customer: Recognizable number, accepted items/total and status
     else Missing or invalid link
-    Product-->>Customer: Check saved link, no order details or public lookup
+    O-->>S: No accessible order
+    S-->>C: Generic unavailable result, no order data
+    C-->>UI: Link guidance, no numeric lookup
     end
-    Note over Customer,Product: No login or installation required. Anyone holding the private link can view that order.
+    Note over Customer,O: Possession grants read access to this order only, not staff operations. No customer login or app installation.

@@ -1,0 +1,33 @@
+flowchart TB
+    subgraph Browser["Browser frontend"]
+        Customer["CustomerView: menu, cart, confirmation"]
+        Staff["StaffView: sign-in, queue and detail"]
+        Tracking["TrackingView: private progress and instructions"]
+        Updates["UpdateCoordinator: current data, last success and recovery"]
+        Staff --> Updates
+        Tracking --> Updates
+    end
+    subgraph Backend["Web backend runtime"]
+        Delivery["Page and asset delivery"]
+        Boundaries["MenuController / OrderController / StaffOrderController / TrackingController / AuthController"]
+        Access["AccessService: staff identity and authorization"]
+        Services["MenuService / CheckoutService / OrderService / TrackingService"]
+        Policies["OpeningPolicy / OrderLifecycle: business decisions"]
+        Stores["MenuStore / RestaurantStore / OrderStore / IdentityStore: persistence handlers"]
+        Delivery --> Boundaries
+        Boundaries --> Access
+        Boundaries --> Services
+        Services --> Policies
+        Services --> Stores
+        Access --> Stores
+    end
+    Durable[("Durable data: restaurant/menu, accepted orders/lines, submissions, status history and staff access")]
+    Setup["Local setup and staff provisioning"]
+    Customer -->|"Browse and submit/recover order"| Delivery
+    Staff -->|"Sign in, inspect, change status"| Delivery
+    Tracking -->|"Open private link"| Delivery
+    Updates -->|"Read current authorized queue/detail or private snapshot"| Boundaries
+    Stores --> Durable
+    Setup --> Durable
+    Decisions["Logical boundaries, not separately deployed microservices. Agent chooses framework, language, rendering, authentication mechanism, data technology, update transport and hosting. Acceptance and staff changes must preserve the specified indivisible consistency guarantees."]
+    Decisions -.-> Backend

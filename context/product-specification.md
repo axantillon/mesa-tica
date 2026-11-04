@@ -6,7 +6,7 @@ Mesa Tica is a fictional single-restaurant pickup-ordering product. Customers ch
 
 Maya is comfortable ordering on her phone during a short lunch break. Luis coordinates kitchen work and needs clear, low-effort staff controls. Helen needs a readable saved-link experience with unmistakable collection guidance. `audience.md` describes these illustrative profiles and scenarios; `user-stories.md` defines capabilities A1-C3.
 
-This specification defines product behavior. Restaurant content is in `restaurant-and-menu.md`, screen behavior and wording in `experience.md`, and completion criteria in `acceptance.md`. Product models in `design/` illustrate the same requirements.
+This specification defines product behavior. Restaurant content is in `restaurant-and-menu.md`, screen behavior and wording in `experience.md`, and completion criteria in `acceptance.md`. Product and logical software models in `design/` define the responsibilities and interactions that realize these requirements.
 
 ## Scope
 
@@ -92,6 +92,6 @@ Opening schedule: the supplied restaurant-local weekly hours, opening inclusive 
 
 ## Implementation freedom and completion
 
-The implementation can choose architecture, language, framework, storage and representation, authentication/access-control mechanism, routes, identifiers, update delivery, concurrency/retry design, dependencies, deployment and visual implementation.
+Implement the logical architecture, responsibilities, interactions and guarantees in `design/`. The implementation chooses concrete runtime organization, language, framework, data representation/technology, authentication mechanism, routes, identifiers, update transport, concurrency/retry algorithms, dependencies, deployment and visual implementation. Logical classes can map to framework-native constructs; no particular library or vendor is required.
 
 Deliver the end-to-end product, not a static mockup or fabricated order workflow. Verify against `acceptance.md`, document actual setup and deployment steps, and distinguish measured outcomes from targets. Local operation must not require an existing hosted account, external-service credential or purchased asset. Deployment documentation can describe account-dependent steps separately.
