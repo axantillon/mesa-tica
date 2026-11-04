@@ -86,7 +86,7 @@ Do not expose staff identities or internal account details through tracking. Kee
 
 ## Restaurant configuration and startup responsibilities
 
-The finished app must be runnable from documented setup, preserve orders/status/history across application restarts, load the provided fictional restaurant/menu, and make at least two staff accounts available through a safe documented setup process. Repeating setup must not duplicate menu data, reset existing passwords or delete orders. No passwords or live credentials are supplied in this context.
+The finished app must be runnable from documented setup, preserve orders/status/history across application restarts, load the provided fictional restaurant/menu, and make at least two staff accounts available through a safe documented setup process. Repeating setup must not duplicate menu data, reset existing passwords or delete orders. No passwords or live credentials are supplied. Local setup must be usable without asking for credentials: generate local-only access or provide a documented noninteractive provisioning path, and explain how to sign in without committing passwords.
 
 Opening schedule: the supplied restaurant-local weekly hours, opening inclusive and closing exclusive. No overnight hours or holiday exceptions are required. Staff may finish previously accepted orders after close. Dates, hours and messages refer to America/Costa_Rica for the supplied restaurant; opening decisions follow that configured time zone, not the visitor's device zone. Show next-opening weekday and local time, including the date when needed to prevent ambiguity.
 
@@ -94,4 +94,4 @@ Opening schedule: the supplied restaurant-local weekly hours, opening inclusive 
 
 The implementation can choose architecture, language, framework, storage and representation, authentication/access-control mechanism, routes, identifiers, update delivery, concurrency/retry design, dependencies, deployment and visual implementation.
 
-Deliver the end-to-end product, not a static mockup or fabricated order workflow. Verify against `acceptance.md`, document actual setup and deployment steps, and distinguish measured outcomes from targets. Hosting/credentials are not assumed to exist.
+Deliver the end-to-end product, not a static mockup or fabricated order workflow. Verify against `acceptance.md`, document actual setup and deployment steps, and distinguish measured outcomes from targets. Local operation must not require an existing hosted account, external-service credential or purchased asset. Deployment documentation can describe account-dependent steps separately.

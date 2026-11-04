@@ -7,14 +7,17 @@ sequenceDiagram
     Product-->>Employee: Active orders oldest first, last successful refresh time
     Employee->>Product: Choose status filter
     Product-->>Employee: Matching orders
-    loop While queue open
+    loop While queue open and access valid
     Product-->>Employee: Automatically show matching new orders/status changes, preserve filter
-    end
-    else Access denied
-    Product-->>Employee: Sign-in or access-denied guidance, no staff order data
     end
     alt Updates fail
     Product-->>Employee: Keep last information/time, show stale warning
     else Updates recover
     Product-->>Employee: Current queue, clear stale warning
+    end
+    opt Access expires
+    Product-->>Employee: Sign in again before viewing or changing staff data
+    end
+    else Access denied
+    Product-->>Employee: Sign-in or access-denied guidance, no staff order data
     end
