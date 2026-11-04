@@ -1,24 +1,30 @@
 # Audience and scenarios
 
-These illustrative profiles guide product decisions. They are not validated research findings.
+These illustrative profiles describe the people and situations the product serves. They are not validated research findings. User stories refer to customer and restaurant-employee roles; these profiles provide concrete examples of those roles.
 
-## Maya - customer ordering between commitments
+## Maya Chen - customer ordering between commitments
 
-Maya, 21, is comfortable with mobile shopping. She has a short lunch break and wants to choose food, check prices and place an accurate pickup order without calling or queuing.
+Maya is 21 and balances university classes with evening retail work. She uses mobile shopping comfortably, but a short lunch break makes time and price clarity important. She wants to choose lunch before reaching the counter and know that the restaurant received exactly what she intended. Calling, waiting in line or discovering an unexpected total would interrupt an already tight schedule.
 
-She browses the menu, adds lunch and a drink, corrects an accidental extra drink, reviews the total and places the order. Confirmation reassures her that it was received and provides a tracking link she can save. She needs clear totals and recovery if her connection fails.
+Between classes, Maya opens Mesa Tica on her phone. She checks which meals are available and compares their prices before adding lunch and a drink. When she notices an accidental extra drink, she changes the quantity and checks the new total. She places a pickup order, sees its number and saves the private tracking link. She expects to pay when collecting the meal; creating an account or supplying personal contact details would add effort without helping this task.
 
-## Luis - restaurant shift supervisor
+A connection failure at checkout is particularly confusing: Maya cannot tell whether trying again would order a second lunch. She needs an honest explanation and a way to recover the same attempt. If a price or availability changes, she wants to review the correction herself rather than discover a substitution or changed charge later.
 
-Luis, 38, coordinates a small kitchen team. He is comfortable with a point-of-sale system and tablet but needs simple controls during busy periods.
+## Luis Ramírez - restaurant employee coordinating a shift
 
-During a rush, he sees incoming orders oldest first, checks their quantities, marks preparation started and later marks meals Ready and Collected. Another employee may be working on the same queue. Luis needs current information and an explicit conflict explanation when another person changes an order first. If the kitchen cannot fulfill an order, he cancels it with a customer-visible reason.
+Luis is 38, has twelve years of restaurant experience and supervises a small team. He is comfortable with a point-of-sale system and tablet, but during a rush his attention moves between preparation, coworkers and the pickup counter. He needs to see what requires attention with few deliberate actions. Repeated status questions and ambiguous tickets make that work harder.
 
-## Helen - customer checking pickup readiness
+At lunchtime, Luis opens the Active queue and checks the oldest orders first. He opens one order to confirm its contents and quantities, marks it Preparing when work starts, then Ready when it can be handed over. After collection he marks it Collected so it leaves the active workload. The accepted item information must stay dependable even if menu prices later change.
 
-Helen, 64, uses email and a smartphone browser but finds unfamiliar navigation difficult. She wants to know whether to leave for the pickup counter without calling the restaurant.
+Another employee can work on the same queue. If that person changes an order before Luis acts, he needs the current state and an explanation instead of a silent overwrite. If an order cannot be fulfilled, he needs to cancel it deliberately and provide a clear customer-visible reason. During a connection problem, a visible stale warning helps him avoid treating old information as current.
 
-She opens her saved private link, recognizes her order by its number and items, and sees Preparing. When it becomes Ready, she sees collection instructions and the same number. If updates fail, she needs a clear warning that the displayed status might be outdated.
+## Helen Brooks - customer checking pickup readiness
+
+Helen is 64, a retired school administrator who volunteers at a community center. She uses email and a smartphone browser but can lose her place in unfamiliar navigation. After an activity, she wants to know whether dinner is ready before heading to the pickup counter. A saved page with a clear status is more useful to her than learning another application.
+
+Helen saves the private tracking link from her confirmation in a phone note. Later, she opens it directly and recognizes the order by its number and purchased items. Preparing tells her to wait; Ready tells her to collect the meal and shows where to go, which number to show and that payment happens at collection. If the order is cancelled, she needs the actual reason and restaurant contact information rather than an unexplained disappearance.
+
+Helen needs status in plain words, readable information and a direct next step. If updates stop, she must be able to distinguish the last known status from a current confirmation. She also needs simple save/copy guidance at confirmation so she can return without an account or installation. Anyone holding the tracking link can view that order, so the product explains keeping it private.
 
 ## Buyer and operator
 
