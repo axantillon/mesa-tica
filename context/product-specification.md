@@ -4,9 +4,9 @@
 
 Mesa Tica is a fictional single-restaurant pickup-ordering product. Customers choose food and know when to collect it; staff coordinate incoming orders and preparation.
 
-Maya is comfortable ordering on her phone during a short lunch break. Luis coordinates kitchen work and needs clear, low-effort staff controls. Helen needs a readable saved-link experience with unmistakable collection guidance. `audience.md` describes these illustrative profiles and scenarios; `user-stories.md` defines capabilities A1-C3.
+Maya is comfortable ordering on her phone during a short lunch break. Luis coordinates kitchen work and needs clear, low-effort staff controls. Helen needs a readable saved-link experience with unmistakable collection guidance. `audience.md` describes these illustrative profiles and scenarios; `user-stories.md` defines customer ordering A1-A5, staff management B1-B3 and tracking C1-C3.
 
-This specification defines product behavior. Restaurant content is in `restaurant-and-menu.md`, screen behavior and wording in `experience.md`, and completion criteria in `acceptance.md`. Product models in `design/` illustrate the same requirements.
+This specification defines product behavior. Restaurant content is in `restaurant-and-menu.md`, screen behavior and wording in `experience.md`, and completion criteria in `acceptance.md`. Product and logical software models in `design/` define the responsibilities and interactions that realize these requirements.
 
 ## Scope
 
@@ -26,15 +26,21 @@ Adding the same dish increases its quantity in one cart row. Quantities are posi
 
 Keep the cart when navigating around or reopening the same browser while local browser data remains available. No cross-device cart is promised. The displayed cart is a selection, not a reservation or price guarantee. Reopening/reviewing checks current availability/prices before an order can be accepted. After a known successful acceptance, empty the purchased cart; a subsequent intentional order starts a separate order. Existing tracking links remain valid.
 
-## A3: Submit and receive confirmation
+## A3: Place a reviewed pickup order
 
-Before submission show the chosen items, quantities, current total and payment-at-collection statement. Submission creates an immediate order, not a reservation awaiting staff acceptance. Accepted orders begin Received and have a unique order number and a private tracking link. Do not imply a preparation ETA. Confirm the accepted contents/total, provide Copy tracking link with success feedback, a selectable fallback if copying fails, and concise save/bookmark guidance.
+Before submission show the chosen items, quantities, current total and payment-at-collection statement. Submission creates an immediate order, not a reservation awaiting staff acceptance. Accepted orders begin Received and have a unique order number and a private tracking link. Do not imply a preparation ETA. The acceptance result supplies the confirmation described in A5.
 
 A submission is accepted only when nonempty, with valid quantities, available known dishes and current reviewed prices, during configured opening hours. A price change in either direction requires explicit customer review before acceptance. An unavailable/removed dish stays identified in the correction so the customer can remove it or choose something else; never silently substitute a dish or reduce quantity. Rejecting a submission creates no order and retains the cart. A changed-menu review requires a fresh explicit submit once corrections are made.
+
+## A4: Recover an uncertain submission
 
 Repeated attempts belonging to the same submission, including simultaneous attempts or retry after a missing response, must create exactly one accepted order and return the same confirmation. A retry of an already accepted submission succeeds even after closing or a later menu change. A new intentional order is separate. One customer's retry cannot reveal another customer's order.
 
 If the outcome is uncertain, say so: do not claim rejection or success. Retain the pending order and offer Check order / Retry safely to recover the original result. Do not invite a fresh order or allow a changed cart to be submitted as though the earlier attempt certainly failed. Once the original result is known, show its confirmation or the actionable rejection. Do not promise recovery after browser data is cleared or on another device without the saved tracking link.
+
+## A5: Keep confirmation and tracking access
+
+After a known acceptance, show the accepted contents/total, order number, Received status for a newly accepted order, and payment-at-collection instructions. Recovery returns the same order identity and accepted contents; if its status has progressed, show current progress rather than reset it to Received. Empty the purchased cart only after acceptance is known. Provide Copy tracking link with success feedback, a selectable fallback if copying fails, and concise save/bookmark and link-privacy guidance. Saving a link does not create an order or require a customer account. Opening the saved private link is C1.
 
 After acceptance, customers cannot edit or cancel orders in the app. The page explains this boundary; staff may cancel unfulfilled orders as below. No recovery by order number is provided when a private link is lost.
 
@@ -64,7 +70,7 @@ Only authorized staff may perform these transitions:
 
 Mark Collected means staff have handed the order to the customer; payment happens outside the application and is not tracked separately. Cancel requires a nonblank, non-whitespace reason and an explicit final confirmation. Explain that the reason will be shown to the customer. The reason describes inability to fulfill the order; do not request private personal information. Cancelling the confirmation changes nothing and retains the typed reason while that detail view remains open.
 
-Record the responsible employee and time for every accepted staff change. If two employees act on the same previously observed state, exactly one change succeeds; the other receives the current state and an explanation. A still-valid next action requires a new deliberate choice against the refreshed state. Never automatically resubmit a rejected change or silently overwrite another employee's work.
+Record the responsible employee and time for every accepted staff change. If two authorized employees submit individually valid competing changes from the same previously observed state, exactly one change succeeds; the other receives the current state and an explanation. A still-valid next action requires a new deliberate choice against the refreshed state. Never automatically resubmit a rejected change or silently overwrite another employee's work.
 
 A temporarily unavailable/stale detail view makes no claims that a change succeeded. Preserve an entered cancellation reason, refresh current state and require deliberate recovery before another attempt. If a write's outcome is uncertain, refresh the actual state/history; do not automatically repeat the action. Collected and Cancelled are final: no skipping, reversal or reopening. Staff may finish accepted orders after closing. No automatic expiry, auto-cancellation or deletion of old active orders occurs.
 
@@ -92,6 +98,6 @@ Opening schedule: the supplied restaurant-local weekly hours, opening inclusive 
 
 ## Implementation freedom and completion
 
-The implementation can choose architecture, language, framework, storage and representation, authentication/access-control mechanism, routes, identifiers, update delivery, concurrency/retry design, dependencies, deployment and visual implementation.
+Implement the logical architecture, responsibilities, interactions and guarantees in `design/`. The implementation chooses concrete runtime organization, language, framework, data representation/technology, authentication mechanism, routes, identifiers, update transport, concurrency/retry algorithms, dependencies, deployment and visual implementation. Logical classes can map to framework-native constructs; no particular library or vendor is required.
 
 Deliver the end-to-end product, not a static mockup or fabricated order workflow. Verify against `acceptance.md`, document actual setup and deployment steps, and distinguish measured outcomes from targets. Local operation must not require an existing hosted account, external-service credential or purchased asset. Deployment documentation can describe account-dependent steps separately.

@@ -1,10 +1,36 @@
+%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
 sequenceDiagram
     autonumber
     actor Employee
-    participant Product as Mesa Tica
-    Employee->>Product: Open order from queue
-    Product-->>Employee: Accepted number, time, items, quantities, prices, total and current state
-    Product-->>Employee: Staff status history and permitted next actions
-    Note over Employee,Product: Later menu changes do not alter accepted order details.
-    Employee->>Product: Return to queue
-    Product-->>Employee: Preserve selected filter
+    participant UI as StaffView
+    participant C as StaffOrderController
+    participant Access as AccessService
+    participant S as OrderService
+    participant O as OrderStore
+    participant L as OrderLifecycle
+    Employee->>UI: Open order
+    UI->>C: getDetail(context, number)
+    C->>Access: requireStaff(context)
+    alt Access denied
+    Access-->>C: Denial
+    C-->>UI: No order data, access guidance
+    else Authorized employee
+    Access-->>C: Employee
+    C->>S: getDetail(number)
+    S->>O: readOrder(number)
+    alt Order found
+    O-->>S: Accepted lines/total, submission time, status/revision and staff history
+    S->>L: allowedActions(currentStatus)
+    L-->>S: Permitted actions for this state
+    S-->>C: Detail and permitted actions
+    C-->>UI: Current detail
+    UI-->>Employee: Accepted values, local time, history and actions
+    else Order not found
+    O-->>S: Not found
+    S-->>C: Unavailable order
+    C-->>UI: Explain unavailable, allow return to queue
+    end
+    end
+    Note over UI,O: Never reconstruct accepted names/prices from today's menu. Detail updates use the same authorized refresh path and retain draft input.
+    Employee->>UI: Return to queue
+    UI-->>Employee: Previous selected filter

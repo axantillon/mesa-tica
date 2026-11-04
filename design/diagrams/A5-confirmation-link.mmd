@@ -1,0 +1,18 @@
+%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant UI as CustomerView
+    Note over Customer,UI: Begins only with a known acceptance result from A3 or A4. No new order is submitted here.
+    UI->>UI: showConfirmation(confirmation)
+    UI-->>Customer: Accepted number, items/total, status and pay-at-collection guidance
+    UI->>UI: Clear purchased cart after known acceptance
+    UI-->>Customer: View progress and save/bookmark instructions, keep link private
+    Customer->>UI: Copy tracking link
+    UI->>UI: copyTrackingLink()
+    alt Copy succeeds
+    UI-->>Customer: Link copied feedback
+    else Copy unavailable
+    UI-->>Customer: Selectable private link and manual-copy instructions
+    end
+    Note over Customer,UI: A recovered order keeps its original identity and accepted contents. Do not reset its current status. C1 defines opening the saved link.

@@ -1,17 +1,19 @@
-# Product traceability
+# Design and acceptance traceability
 
-The product has nine user stories. Product details are in `context/product-specification.md`; screen behavior/messages are in `context/experience.md`.
+All eleven user stories have a detailed interaction sequence. Every named responsibility below is defined in `diagrams/06-detailed-design.mmd`; runtime boundaries are in `diagrams/05-logical-architecture.mmd`.
 
-| User story | Product section | Sequence in diagrams/ | Acceptance IDs |
-|---|---|---|---|
-| A1 | Menu and opening state | A1-menu.mmd | A1 |
-| A2 | Cart review and quantity correction | A2-cart.mmd | A2 |
-| A3 | Acceptance, review, recovery and saved link | A3-checkout.mmd | A3, A3-REVIEW, A3-RETRY, A3-LINK |
-| B1 | Staff access, queue and freshness | B1-queue.mmd | B1, B1-STALE, ACCESS |
-| B2 | Accepted order details | B2-detail.mmd | B2 |
-| B3 | Progress, cancellation and conflict recovery | B3-transition.mmd | B3, B3-CONFLICT, ACCESS |
-| C1 | Private saved-link access | C1-private-summary.mmd | C1, ACCESS |
-| C2 | Automatic status and interrupted updates | C2-tracking-refresh.mmd | C2 |
-| C3 | Ready, cancelled and collected guidance | C3-instructions.mmd | C3 |
+| Story | Product capability | Sequence in diagrams/ | Logical responsibilities | Acceptance IDs |
+|---|---|---|---|---|
+| A1 | Menu/opening | A1-menu.mmd | CustomerView, MenuController, MenuService, OpeningPolicy, MenuStore, RestaurantStore | A1 |
+| A2 | Cart review | A2-cart.mmd | CustomerView, Cart, CartItem | A2 |
+| A3 | Reviewed acceptance | A3-checkout.mmd | CustomerView, OrderController, CheckoutService, OpeningPolicy, OrderStore, MenuStore, RestaurantStore, SubmissionIdentity, Order, OrderedItem, Confirmation | A3, A3-REVIEW |
+| A4 | Uncertain submission recovery | A4-submission-recovery.mmd | CustomerView, OrderController, CheckoutService, OrderStore, SubmissionIdentity, Order, Confirmation | A4 |
+| A5 | Confirmation and saved link | A5-confirmation-link.mmd | CustomerView, Confirmation, Cart | A5 |
+| B1 | Access and queue | B1-queue.mmd | StaffView, AuthController, AccessService, IdentityStore, UpdateCoordinator, StaffOrderController, OrderService, OrderStore | B1, B1-STALE, ACCESS |
+| B2 | Accepted detail | B2-detail.mmd | StaffView, StaffOrderController, AccessService, OrderService, OrderStore, Order, OrderedItem, StatusChange | B2 |
+| B3 | Progress and conflict | B3-transition.mmd | StaffView, StaffOrderController, AccessService, OrderService, OrderLifecycle, OrderStore, Order, StatusChange, Employee | B3, B3-CONFLICT, ACCESS |
+| C1 | Private access | C1-private-summary.mmd | TrackingView, TrackingController, TrackingService, OrderStore | C1, ACCESS |
+| C2 | Current status | C2-tracking-refresh.mmd | TrackingView, UpdateCoordinator, TrackingController, TrackingService, OrderStore | C2 |
+| C3 | Collection guidance | C3-instructions.mmd | TrackingView, TrackingController, TrackingService, OrderStore, RestaurantStore | C3 |
 
-SETUP and RUN cover startup and operation; EXPERIENCE applies across journeys. Quality targets are separate from functional acceptance checks.
+SETUP and RUN cover startup, persistent operation and provisioning. EXPERIENCE applies across journeys. Context, concepts, lifecycle and shared-rule diagrams support all stories. Quality targets in `context/acceptance.md` require measurement and are separate from functional coverage.

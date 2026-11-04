@@ -1,15 +1,35 @@
+%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
 sequenceDiagram
     autonumber
     actor Customer
-    participant Product as Mesa Tica
-    Customer->>Product: View current order state
+    participant UI as TrackingView
+    participant C as TrackingController
+    participant S as TrackingService
+    participant O as OrderStore
+    participant R as RestaurantStore
+    Customer->>UI: View order progress
+    UI->>C: getSummary(privateLink)
+    C->>S: getSnapshot(privateLink)
+    S->>O: findByPrivateLink(privateLink)
+    alt Link unavailable
+    O-->>S: No accessible order
+    S-->>C: Generic unavailable result
+    C-->>UI: No order information
+    else Valid associated order
+    O-->>S: Accepted order/status and cancellation reason if any
+    S->>R: readRestaurant()
+    R-->>S: Pickup instructions, location and contact
+    S->>S: collectionGuidance(order, restaurant)
     alt Received or Preparing
-    Product-->>Customer: Not ready for collection
+    S-->>C: Not ready for pickup
     else Ready
-    Product-->>Customer: Ready, order number, pickup location/instructions and pay-at-collection
+    S-->>C: Number, pickup instructions and payment-at-collection
     else Cancelled
-    Product-->>Customer: Cancellation reason and labeled restaurant contact
+    S-->>C: Customer-visible reason and labeled contact
     else Collected
-    Product-->>Customer: Collected confirmation, no further pickup action
+    S-->>C: Collected, no further pickup action
     end
-    Note over Customer,Product: If information is stale, retain the warning alongside these messages.
+    C-->>UI: Safe summary and matching guidance
+    UI-->>Customer: Status-specific next step
+    end
+    Note over UI,S: Existing stale warning remains until a successful current read. No preparation ETA or extra notification requirement.

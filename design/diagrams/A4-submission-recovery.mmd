@@ -1,0 +1,38 @@
+%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant UI as CustomerView
+    participant C as OrderController
+    participant S as CheckoutService
+    participant O as OrderStore
+    Customer->>UI: Return to an attempt with missing confirmation
+    UI-->>Customer: Outcome uncertain, recover this attempt before placing another order
+    Customer->>UI: Check order
+    UI->>C: recover(context, attempt)
+    C->>S: recover(context, attempt)
+    S->>O: findAccepted(context, attempt)
+    alt Original acceptance found
+    O-->>S: Original order, even if restaurant is now closed
+    S->>S: buildConfirmation(order)
+    S-->>C: Same order identity, accepted contents and tracking link
+    C-->>UI: Accepted result for A5 confirmation
+    else Acceptance not yet established
+    O-->>S: No accepted record found, not proof of rejection
+    S-->>C: Still unresolved
+    C-->>UI: Retain pending attempt and original reviewed selection
+    Customer->>UI: Retry same attempt safely
+    UI->>C: submit(context, sameAttempt, sameSelection)
+    C->>S: accept(context, sameAttempt, sameSelection)
+    Note over S,O: Execute the complete A3 acceptance path, including current checks for a new acceptance and same-attempt serialization. Do not bypass validation or create a fresh attempt.
+    alt Original acceptance or valid new acceptance of same attempt
+    S-->>C: One accepted order, original confirmation identity
+    C-->>UI: Known acceptance for A5
+    else Confirmed rejection
+    S-->>C: Actionable correction, no accepted order
+    C-->>UI: Retain cart, allow deliberate correction
+    else Response still unavailable
+    UI-->>Customer: Remain uncertain, do not claim rejection or silently place another order
+    end
+    end
+    Note over UI,O: Recovery cannot expose another customer's order. A deliberately new order is distinct from retrying this pending attempt.

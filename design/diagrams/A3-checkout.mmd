@@ -1,32 +1,54 @@
+%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
 sequenceDiagram
     autonumber
     actor Customer
-    participant Product as Mesa Tica
-    Customer->>Product: Place reviewed pickup order
-    alt Same submission already accepted
-    Product-->>Customer: Same order number and confirmation, even after closing
-    else New submission needs correction
-    Product-->>Customer: No order created, retain cart and explain correction
-    Customer->>Product: Review corrected choices before another explicit submission
-    else Valid new submission
-    Product-->>Customer: Received order, unique number, accepted contents/total, private link
+    participant UI as CustomerView
+    participant C as OrderController
+    participant S as CheckoutService
+    participant O as OrderStore
+    participant M as MenuStore
+    participant R as RestaurantStore
+    participant P as OpeningPolicy
+    Customer->>UI: Place reviewed pickup order
+    UI->>C: submit(context, attempt, selection)
+    C->>S: accept(context, attempt, selection)
+    S->>O: findAccepted(context, attempt)
+    alt Same attempt already accepted
+    O-->>S: Original order
+    S->>S: buildConfirmation(order)
+    else Not already accepted
+    S->>M: readCurrentMenu()
+    M-->>S: Current item values and availability
+    S->>R: readRestaurant()
+    R-->>S: Configured hours and timezone
+    S->>P: isOpen(restaurant, now)
+    P-->>S: Open or closed with next opening
+    S->>S: validateSelection(selection, menu)
+    alt Preliminary correction needed
+    S->>O: resolveRejectedAttempt(context, attempt)
+    alt Same attempt accepted concurrently
+    O-->>S: Original acceptance
+    S->>S: buildConfirmation(order)
+    else No accepted order
+    O-->>S: No acceptance, no order created by rejected decision
+    Note over S,O: Return correction or changed-menu review with no order, preserving the cart.
     end
-    opt Result uncertain because connection failed
-    Product-->>Customer: Result not confirmed, recover this attempt before another order
-    Customer->>Product: Check or safely retry same submission
-    alt Order accepted
-    Product-->>Customer: Original accepted confirmation
-    else Confirmed rejection
-    Product-->>Customer: Correction and retained cart, no order
-    else Still unavailable
-    Product-->>Customer: Remain uncertain, do not create another order
+    else Preliminary checks valid
+    S->>O: acceptOnce(context, attempt, selection, proposal)
+    Note over S,O: Decisive boundary rechecks current acceptance conditions and serializes same-attempt outcomes. No particular locking or transaction mechanism is prescribed.
+    alt Accepted or identical concurrent acceptance
+    O-->>S: One accepted order, immutable contents and current status
+    S->>S: buildConfirmation(order)
+    else Conditions changed before acceptance
+    O-->>S: Correction or explicit review required, no new order
     end
     end
-    opt Accepted confirmation is available
-    Customer->>Product: Copy tracking link
-    alt Copy succeeds
-    Product-->>Customer: Copied feedback and save guidance
-    else Copy unavailable
-    Product-->>Customer: Selectable link and manual-copy guidance
     end
+    S-->>C: Accepted confirmation or correction
+    C-->>UI: Known result
+    alt Known acceptance
+    UI-->>Customer: Acceptance result, show confirmation under A5
+    else Known rejection
+    UI-->>Customer: Explain correction, keep cart and require deliberate resubmission
     end
+    Note over UI,O: Same-attempt duplicate prevention is always required. A4 handles uncertain outcomes, and A5 presents accepted confirmation without creating another order.

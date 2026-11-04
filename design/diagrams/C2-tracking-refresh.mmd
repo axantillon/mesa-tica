@@ -1,14 +1,35 @@
+%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
 sequenceDiagram
     autonumber
     actor Customer
-    participant Product as Mesa Tica
-    Customer->>Product: Leave tracking page open
-    loop While page open with working connection
-    Product-->>Customer: Automatically updated status and last successful check
+    participant UI as TrackingView
+    participant U as UpdateCoordinator
+    participant C as TrackingController
+    participant S as TrackingService
+    participant O as OrderStore
+    Customer->>UI: Leave private tracking page open
+    UI->>U: observe(private tracking target, view)
+    loop Automatic current-information checks while page open
+    U->>C: getSummary(privateLink)
+    C->>S: getSnapshot(privateLink)
+    S->>O: findByPrivateLink(privateLink)
+    O-->>S: Associated current order or unavailable
+    S-->>C: Safe snapshot or unavailable
+    alt Successful current snapshot
+    C-->>U: Current information
+    U-->>UI: Render current status, update successful time, clear warning
+    else Invalid link
+    C-->>U: Link unavailable without order data
+    U-->>UI: Show unavailable-link state, no invented status
     end
-    alt Connection or updates fail
-    Product-->>Customer: Keep last status/time, warn information may be outdated
-    else Successful recovery
-    Product-->>Customer: Current status, new check time, clear warning
     end
-    Note over Customer,Product: Never show a fabricated status before the first successful load.
+    opt Connection or service failure
+    U-->>UI: Keep last information/time and mark stale
+    UI-->>Customer: Status may be outdated, no fabricated first-load result
+    end
+    opt Connectivity returns
+    UI->>U: recover(private tracking target)
+    U->>U: refresh(target) through the same private read
+    U-->>UI: Clear warning only after successful current information
+    end
+    Note over UI,U: Transport and scheduling are implementation choices. Meet specified freshness targets where measured, without erasing active user input.
