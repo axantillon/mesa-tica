@@ -4,7 +4,7 @@
 
 Mesa Tica is a fictional single-restaurant pickup-ordering product. Customers choose food and know when to collect it; staff coordinate incoming orders and preparation.
 
-Maya is comfortable ordering on her phone during a short lunch break. Luis coordinates kitchen work and needs clear, low-effort staff controls. Helen needs a readable saved-link experience with unmistakable collection guidance. `audience.md` describes these illustrative profiles and scenarios; `user-stories.md` defines capabilities A1-C3.
+Maya is comfortable ordering on her phone during a short lunch break. Luis coordinates kitchen work and needs clear, low-effort staff controls. Helen needs a readable saved-link experience with unmistakable collection guidance. `audience.md` describes these illustrative profiles and scenarios; `user-stories.md` defines customer ordering A1-A5, staff management B1-B3 and tracking C1-C3.
 
 This specification defines product behavior. Restaurant content is in `restaurant-and-menu.md`, screen behavior and wording in `experience.md`, and completion criteria in `acceptance.md`. Product and logical software models in `design/` define the responsibilities and interactions that realize these requirements.
 
@@ -26,15 +26,21 @@ Adding the same dish increases its quantity in one cart row. Quantities are posi
 
 Keep the cart when navigating around or reopening the same browser while local browser data remains available. No cross-device cart is promised. The displayed cart is a selection, not a reservation or price guarantee. Reopening/reviewing checks current availability/prices before an order can be accepted. After a known successful acceptance, empty the purchased cart; a subsequent intentional order starts a separate order. Existing tracking links remain valid.
 
-## A3: Submit and receive confirmation
+## A3: Place a reviewed pickup order
 
-Before submission show the chosen items, quantities, current total and payment-at-collection statement. Submission creates an immediate order, not a reservation awaiting staff acceptance. Accepted orders begin Received and have a unique order number and a private tracking link. Do not imply a preparation ETA. Confirm the accepted contents/total, provide Copy tracking link with success feedback, a selectable fallback if copying fails, and concise save/bookmark guidance.
+Before submission show the chosen items, quantities, current total and payment-at-collection statement. Submission creates an immediate order, not a reservation awaiting staff acceptance. Accepted orders begin Received and have a unique order number and a private tracking link. Do not imply a preparation ETA. The acceptance result supplies the confirmation described in A5.
 
 A submission is accepted only when nonempty, with valid quantities, available known dishes and current reviewed prices, during configured opening hours. A price change in either direction requires explicit customer review before acceptance. An unavailable/removed dish stays identified in the correction so the customer can remove it or choose something else; never silently substitute a dish or reduce quantity. Rejecting a submission creates no order and retains the cart. A changed-menu review requires a fresh explicit submit once corrections are made.
+
+## A4: Recover an uncertain submission
 
 Repeated attempts belonging to the same submission, including simultaneous attempts or retry after a missing response, must create exactly one accepted order and return the same confirmation. A retry of an already accepted submission succeeds even after closing or a later menu change. A new intentional order is separate. One customer's retry cannot reveal another customer's order.
 
 If the outcome is uncertain, say so: do not claim rejection or success. Retain the pending order and offer Check order / Retry safely to recover the original result. Do not invite a fresh order or allow a changed cart to be submitted as though the earlier attempt certainly failed. Once the original result is known, show its confirmation or the actionable rejection. Do not promise recovery after browser data is cleared or on another device without the saved tracking link.
+
+## A5: Keep confirmation and tracking access
+
+After a known acceptance, show the accepted contents/total, order number, Received status for a newly accepted order, and payment-at-collection instructions. Recovery returns the same order identity and accepted contents; if its status has progressed, show current progress rather than reset it to Received. Empty the purchased cart only after acceptance is known. Provide Copy tracking link with success feedback, a selectable fallback if copying fails, and concise save/bookmark and link-privacy guidance. Saving a link does not create an order or require a customer account. Opening the saved private link is C1.
 
 After acceptance, customers cannot edit or cancel orders in the app. The page explains this boundary; staff may cancel unfulfilled orders as below. No recovery by order number is provided when a private link is lost.
 

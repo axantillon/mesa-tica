@@ -14,7 +14,9 @@ These models define Mesa Tica's boundaries, responsibilities, interactions and c
 | `06-detailed-design.mmd` | Detailed UI/controller/service/policy/storage responsibilities, entity/value information, operations and multiplicities. Establishes implementable contracts for the sequences, including staff access, durable acceptance and concurrent changes. |
 | `A1-menu.mmd` | CustomerView -> MenuController -> MenuService -> menu/configuration storage and OpeningPolicy. Makes closed/unavailable behavior part of the menu presentation. |
 | `A2-cart.mmd` | CustomerView and Cart edits, corrections and recalculation. Keeps cart convenience separate from authoritative acceptance. |
-| `A3-checkout.mmd` | Submission/recovery through controller, service, policy and stores. Preserves exactly-one acceptance and protects against menu changes and lost responses. |
+| `A3-checkout.mmd` | Reviewed submission through controller, service, policy and stores. Validates current choices/hours and preserves exactly-one acceptance. |
+| `A4-submission-recovery.mmd` | Recovery of a missing confirmation and safe resubmission through the same acceptance contract. Distinguishes an unknown result from rejection and prevents accidental second orders. |
+| `A5-confirmation-link.mmd` | Known-acceptance presentation, purchased-cart clearing and link copying/saving. Separates confirmation usability from order creation and from C1's saved-link lookup. |
 | `B1-queue.mmd` | Sign-in and authorization through identity handling, then queue refresh through OrderService/OrderStore. Shows failure, recovery and sign-out without prescribing an update transport. |
 | `B2-detail.mmd` | Authorized detail retrieval, accepted history and return-to-filter behavior. Prevents rebuilding historical prices from today's menu. |
 | `B3-transition.mmd` | Explicit action/cancellation, authorization, current-state/lifecycle checks and indivisible status/history change. Explains how stale actions are rejected without silently repeating them. |

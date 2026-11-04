@@ -6,7 +6,9 @@
 |---|---|---|
 | A1 | As a customer, I want to browse dishes and prices so I can choose a meal within my budget. | Names, descriptions, prices, availability and opening state are clear. Unavailable dishes cannot be added; closed ordering explains the next opening. |
 | A2 | As a customer, I want to review and edit my cart so it contains the items and quantities I intend to buy. | Positive whole-number quantities, explicit removal, corrected invalid input and recalculated total. |
-| A3 | As a customer, I want to submit my pickup order so the restaurant can prepare my meal. | Current prices/availability and opening time are checked. One accepted submission creates one Received order and returns its number/private link with copy/save guidance. Repeated attempts recover that result. |
+| A3 | As a customer, I want to place my reviewed pickup order so the restaurant can prepare the meal I chose. | Current prices/availability and opening time are checked. Corrections retain the cart. One accepted submission creates one Received order with its accepted contents, number and private tracking link. |
+| A4 | As a customer, I want to recover an order attempt when confirmation is missing so I do not accidentally place a second order. | Check or safely retry the same attempt, recover its original acceptance even after closing, distinguish rejection from an unknown outcome and never create a duplicate. |
+| A5 | As a customer, I want to keep the confirmation and tracking link so I can return to check my order later. | Show accepted number/items/total and payment instructions, provide copy feedback/manual fallback and save/privacy guidance, and empty the purchased cart after known acceptance. |
 
 ## B. Restaurant order management
 
@@ -25,3 +27,5 @@
 | C3 | As a customer, I want clear readiness or cancellation instructions so I can decide whether to collect the meal. | Ready shows pickup instructions/number; Cancelled shows reason/contact; other states do not incorrectly invite collection. |
 
 The specification defines the business rules and alternate outcomes for these stories. Acceptance criteria define how to check them.
+
+A3, A4 and A5 share one acceptance contract: recovery and confirmation never create an additional order. A5 covers retaining the link from confirmation; C1 covers opening that saved link and reading the associated order.

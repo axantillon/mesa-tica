@@ -46,21 +46,8 @@ sequenceDiagram
     S-->>C: Accepted confirmation or correction
     C-->>UI: Known result
     alt Known acceptance
-    UI-->>Customer: Number, accepted total and private link, clear purchased cart
+    UI-->>Customer: Acceptance result, show confirmation under A5
     else Known rejection
     UI-->>Customer: Explain correction, keep cart and require deliberate resubmission
     end
-    opt Result uncertain because response unavailable
-    UI-->>Customer: Outcome unknown, recover this attempt before another order
-    Customer->>UI: Check or retry safely
-    UI->>C: recover(context, attempt) or submit original unchanged attempt
-    C->>S: recover(context, attempt) or accept original unchanged attempt
-    S->>O: findAccepted(context, attempt) or same acceptOnce decision
-    O-->>S: Original acceptance, confirmed rejection or still unknown
-    S-->>C: Actual result
-    C-->>UI: Same outcome, never silently mint another attempt
-    end
-    opt Accepted confirmation available
-    Customer->>UI: Copy tracking link
-    UI-->>Customer: Copied feedback, or selectable link and manual-copy guidance
-    end
+    Note over UI,O: Same-attempt duplicate prevention is always required. A4 handles uncertain outcomes, and A5 presents accepted confirmation without creating another order.
