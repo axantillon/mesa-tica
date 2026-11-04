@@ -1,0 +1,284 @@
+# Detailed class design: reading views
+
+These four views partition the [complete detailed model](diagrams/06-detailed-design.mmd) for readability. Each class is defined in full once; names without members reference classes defined in another view. Every relationship from the complete model appears in the view containing its source class. The complete `.mmd` source is authoritative; refresh these reading views whenever it changes. No additional responsibilities are introduced.
+
+## Presentation and request boundaries
+
+```mermaid
+classDiagram
+    direction TB
+    class CustomerView {
+        +Cart cart
+        +SubmissionIdentity pendingAttempt
+        +showMenu(menu)
+        +editQuantity(item, quantity)
+        +removeItem(item)
+        +reviewAndSubmit()
+        +recoverPending()
+        +showConfirmation(confirmation)
+        +copyTrackingLink()
+    }
+    class StaffView {
+        +OrderFilter filter
+        +Revision observedRevision
+        +Text draftReason
+        +signIn()
+        +showQueue(orders)
+        +showDetail(order)
+        +requestChange(target, reason)
+        +showConflict(currentOrder)
+        +signOut()
+    }
+    class TrackingView {
+        +PrivateLink privateLink
+        +showSummary(snapshot)
+        +showInstructions(snapshot)
+        +showUnavailable()
+    }
+    class UpdateCoordinator {
+        +Instant lastSuccessfulCheck
+        +Snapshot currentInformation
+        +Boolean stale
+        +observe(target, view)
+        +refresh(target)
+        +recover(target)
+        +stop(target)
+    }
+    class MenuController {
+        +getMenu(context)
+    }
+    class OrderController {
+        +submit(context, attempt, selection)
+        +recover(context, attempt)
+    }
+    class StaffOrderController {
+        +listQueue(context, filter)
+        +getDetail(context, number)
+        +changeStatus(context, number, revision, target, reason)
+    }
+    class TrackingController {
+        +getSummary(privateLink)
+    }
+    class AuthController {
+        +signIn(credentials)
+        +signOut(context)
+    }
+    class AccessService
+    class Cart
+    class CheckoutService
+    class MenuService
+    class OrderService
+    class TrackingService
+    CustomerView --> MenuController
+    CustomerView --> OrderController
+    StaffView --> AuthController
+    StaffView --> StaffOrderController
+    TrackingView --> TrackingController
+    StaffView --> UpdateCoordinator
+    TrackingView --> UpdateCoordinator
+    UpdateCoordinator --> StaffOrderController
+    UpdateCoordinator --> TrackingController
+    MenuController --> MenuService
+    OrderController --> CheckoutService
+    AuthController --> AccessService
+    StaffOrderController --> AccessService
+    StaffOrderController --> OrderService
+    TrackingController --> TrackingService
+    CustomerView "1" --> "1" Cart
+    note for UpdateCoordinator "Logical current-data responsibility. Polling, push, rendering strategy and<br/>scheduling are open. Preserve input and filter, record successful check<br/>only, retain stale data with warning and recover current information. Never<br/>automatically repeat a rejected or uncertain staff write."
+```
+
+## Application services and business policies
+
+```mermaid
+classDiagram
+    direction TB
+    class MenuService {
+        +getMenu(now)
+    }
+    class CheckoutService {
+        +accept(context, attempt, selection)
+        +recover(context, attempt)
+        +validateSelection(selection, menu)
+        +buildConfirmation(order)
+    }
+    class OrderService {
+        +listQueue(filter)
+        +getDetail(number)
+        +changeStatus(number, revision, target, reason, employee)
+    }
+    class TrackingService {
+        +getSnapshot(privateLink)
+        +collectionGuidance(order, restaurant)
+    }
+    class AccessService {
+        +signIn(credentials)
+        +requireStaff(context)
+        +signOut(context)
+    }
+    class OpeningPolicy {
+        +isOpen(restaurant, now)
+        +nextOpening(restaurant, now)
+    }
+    class OrderLifecycle {
+        +allowedActions(status)
+        +validateChange(status, target, reason)
+    }
+    class IdentityStore
+    class MenuStore
+    class OrderStore
+    class RestaurantStore
+    MenuService --> MenuStore
+    MenuService --> RestaurantStore
+    MenuService --> OpeningPolicy
+    CheckoutService --> MenuStore
+    CheckoutService --> RestaurantStore
+    CheckoutService --> OpeningPolicy
+    CheckoutService --> OrderStore
+    OrderService --> OrderStore
+    OrderService --> OrderLifecycle
+    TrackingService --> OrderStore
+    TrackingService --> RestaurantStore
+    AccessService --> IdentityStore
+    note for CheckoutService "Early validation is for useful corrections, not final acceptance authority.<br/>resolveRejectedAttempt checks whether a racing identical attempt was<br/>accepted before presenting rejection. Proposals never authorize unreviewed<br/>price/item changes."
+    note for AccessService "All staff reads/writes require current authorized identity, including<br/>requests bypassing visible UI. Identity and credential handling may use<br/>framework-native facilities."
+```
+
+## Persistence handlers
+
+```mermaid
+classDiagram
+    direction TB
+    class MenuStore {
+        +readCurrentMenu()
+    }
+    class RestaurantStore {
+        +readRestaurant()
+    }
+    class OrderStore {
+        +findAccepted(context, attempt)
+        +acceptOnce(context, attempt, selection, proposal)
+        +resolveRejectedAttempt(context, attempt)
+        +listOrders(filter)
+        +readOrder(number)
+        +findByPrivateLink(privateLink)
+        +changeIfCurrent(number, revision, target, reason, employee)
+    }
+    class IdentityStore {
+        +authenticate(credentials)
+        +resolveAccess(context)
+        +revokeAccess(context)
+        +provisionEmployee(profile, credentials)
+    }
+    class Employee
+    class MenuItem
+    class Order
+    class Restaurant
+    class SubmissionIdentity
+    MenuStore --> MenuItem
+    RestaurantStore --> Restaurant
+    OrderStore --> Order
+    OrderStore --> SubmissionIdentity
+    IdentityStore --> Employee
+    note for OrderStore "acceptOnce is one indivisible acceptance decision: same scoped attempt<br/>returns the same order identity/contents and current status before<br/>new-order checks, otherwise validates current hours/menu and records<br/>exactly one order with accepted lines. A failed decision creates no order.<br/>changeIfCurrent checks observed revision, lifecycle and reason and records<br/>order plus employee/time history together. Mechanisms belong to<br/>implementation."
+```
+
+## Product entities and values
+
+```mermaid
+classDiagram
+    direction TB
+    class Restaurant {
+        +Text name
+        +TimeZone timezone
+        +WeeklyHours openingHours
+        +Text pickupLocation
+        +Text pickupInstructions
+        +Text contact
+        +Currency currency
+    }
+    class MenuItem {
+        +ItemReference reference
+        +Text name
+        +Text description
+        +Text group
+        +SortPosition displayOrder
+        +Money price
+        +Boolean available
+    }
+    class Cart {
+        +CartItemList items
+        +changeQuantity(item, quantity)
+        +remove(item)
+        +calculateTotal()
+    }
+    class CartItem {
+        +ItemReference item
+        +PositiveWholeNumber quantity
+        +Text reviewedName
+        +Money reviewedPrice
+    }
+    class SubmissionIdentity {
+        +AttemptReference reference
+        +CustomerContext customerContext
+    }
+    class Order {
+        +OrderNumber number
+        +Instant submittedAt
+        +OrderStatus status
+        +Revision revision
+        +Money total
+        +PrivateLink privateLink
+    }
+    class OrderedItem {
+        +Text acceptedName
+        +PositiveWholeNumber quantity
+        +Money acceptedPrice
+        +Money subtotal
+    }
+    class StatusChange {
+        +OrderStatus fromStatus
+        +OrderStatus toStatus
+        +EmployeeReference employee
+        +Instant time
+        +Text reason
+    }
+    class Employee {
+        +EmployeeReference reference
+        +Text displayName
+        +Boolean authorized
+    }
+    class Confirmation {
+        +OrderedItemList acceptedItems
+        +OrderNumber orderNumber
+        +OrderStatus status
+        +Money total
+        +PrivateLink privateLink
+    }
+    class Money {
+        +ExactAmount amount
+        +Currency currency
+    }
+    class OrderStatus {
+        <<enumeration>>
+        Received
+        Preparing
+        Ready
+        Collected
+        Cancelled
+    }
+    CartItem --> MenuItem
+    Order --> OrderStatus
+    MenuItem --> Money
+    OrderedItem --> Money
+    Cart "1" *-- "0..*" CartItem
+    Restaurant "1" --> "0..*" MenuItem
+    Order "1" *-- "1..*" OrderedItem
+    Order "1" *-- "0..*" StatusChange
+    Employee "1" --> "0..*" StatusChange
+    SubmissionIdentity "1" --> "0..1" Order : accepted attempt
+    Confirmation --> Order : summarizes
+    note for SubmissionIdentity "Logical identity of one customer's submission. Absence of an accepted<br/>record alone is not proof that an in-flight attempt was rejected. No UUID,<br/>session/cookie scheme, storage representation or lifetime is prescribed.<br/>Accepted identity cannot authorize a different selection or expose another<br/>customer's order."
+    note for Order "Accepted contents and totals are immutable. Revision is an opaque<br/>observed-state marker, not a prescribed database field type. PrivateLink<br/>grants read access only to this order."
+    note for Money "Exact monetary meaning, not a prescribed numeric storage representation.<br/>Other named types denote product values or collections, not extra mandatory<br/>runtime classes."
+```

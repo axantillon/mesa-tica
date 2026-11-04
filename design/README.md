@@ -2,6 +2,10 @@
 
 These models define Mesa Tica's boundaries, responsibilities, interactions and consistency guarantees. They are the design to implement. Language, framework, rendering strategy, identity technology, data technology, transport, concurrency algorithms and hosting remain implementation choices.
 
+## Reading the diagrams
+
+Use the [diagram gallery](diagram-gallery.md) for rendered views and the [class reading views](class-views.md) for the detailed model. Raw `.mmd` files are canonical. The Markdown pages mirror them for browser review; implementation can read the sources without rereading duplicate views.
+
 ## Models and rationale
 
 | Model | Description and value |

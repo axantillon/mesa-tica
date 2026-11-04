@@ -15,7 +15,7 @@ These checks describe observable outcomes, not test tooling or implementation me
 | B1-STALE | B1 | Update failure preserves last information/check time and marks it stale. Recovery clears warning only after receiving current information. Lost access requires sign-in. |
 | B2 | B2 | Staff detail shows accepted names/prices/quantities/time/total, current status and status history even after menu changes. |
 | B3 | B3 | Only listed transitions succeed. Cancel requires customer-visible nonblank reason and explicit confirmation; dismissing confirmation changes nothing. Collected/Cancelled cannot change. Accepted changes identify employee/time. |
-| B3-CONFLICT | B3 | Two staff changes against the same observed state yield one success and one explained conflict. Current state is shown; another attempt is deliberate and valid. A rejected change does not overwrite another employee's work. |
+| B3-CONFLICT | B3 | Two individually valid competing staff changes against the same observed state yield one success and one explained conflict. Current state is shown; another attempt is deliberate and valid. A rejected change does not overwrite another employee's work. |
 | C1 | C1 | Saved private link opens only its associated order without login. Invalid/missing links and a guessed order number disclose no order data. Public view exposes no staff identities. Private links contain at least 128 bits of random entropy. |
 | C2 | C2 | Open tracking updates automatically. Failure preserves status/time with warning; successful recovery obtains current status before clearing warning. No invented status/check time during initial failure. |
 | C3 | C3 | Received/Preparing say not ready; Ready shows pickup and payment instructions; Cancelled shows reason/labeled demo contact; Collected does not invite pickup again. Stale warnings remain clear for every status. |
@@ -29,7 +29,7 @@ These checks describe observable outcomes, not test tooling or implementation me
 - Queue: 10 staff sessions, 200 active orders and >=10 Mbps connections; 95% of loads finish within 2 seconds and 95% of matching new orders/status changes appear within 5 seconds of acceptance.
 - Tracking: 100 active sessions on functioning connections; 95% of saved staff status changes appear within 5 seconds. Recovery obtains current status and clears the warning within 5 seconds after connectivity returns.
 - Submission reliability: 100 cases covering valid, repeated, lost-response and rejected attempts preserve exactly one order per accepted submission and none per rejected submission.
-- Staff consistency: 100 pairs of conflicting same-state updates yield exactly one success and one explained conflict, with deliberate valid recovery.
+- Staff consistency: 100 pairs of individually valid conflicting same-state updates yield exactly one success and one explained conflict, with deliberate valid recovery.
 - Human usability: 9/10 first-time users complete a three-item order unaided within 3 minutes; 9/10 users with basic smartphone skills identify status and whether collection is appropriate unaided within 15 seconds.
 
 The application should demonstrate the functional journey and check meaningful failure paths. Report which quality targets were measured, with conditions/results, and which remain unverified. Human studies require actual participants; concurrency/load targets require actual measurements. No additional uptime SLA, certification, medical/dietary claim, large-scale benchmark or production-readiness guarantee is introduced.

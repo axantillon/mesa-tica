@@ -1,3 +1,4 @@
+%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
 sequenceDiagram
     autonumber
     actor Customer
@@ -36,7 +37,7 @@ sequenceDiagram
     S->>O: acceptOnce(context, attempt, selection, proposal)
     Note over S,O: Decisive boundary rechecks current acceptance conditions and serializes same-attempt outcomes. No particular locking or transaction mechanism is prescribed.
     alt Accepted or identical concurrent acceptance
-    O-->>S: One original Received order and accepted contents
+    O-->>S: One accepted order, immutable contents and current status
     S->>S: buildConfirmation(order)
     else Conditions changed before acceptance
     O-->>S: Correction or explicit review required, no new order
