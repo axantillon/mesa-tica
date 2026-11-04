@@ -1,0 +1,56 @@
+classDiagram
+    class Restaurant {
+        name
+        localOpeningHours
+        pickupInstructions
+        contactInformation
+    }
+    class MenuItem {
+        name
+        description
+        price
+        availability
+    }
+    class Cart {
+        selectedItems
+        displayedTotal
+    }
+    class CartItem {
+        dish
+        quantity
+        reviewedPrice
+    }
+    class Order {
+        uniqueNumber
+        submissionTime
+        acceptedContents
+        acceptedTotal
+        currentStatus
+        privateTrackingLink
+    }
+    class OrderedItem {
+        acceptedName
+        quantity
+        acceptedUnitPrice
+        acceptedSubtotal
+    }
+    class StatusChange {
+        previousStatus
+        newStatus
+        employee
+        time
+        cancellationReason
+    }
+    class Employee {
+        displayName
+        authorizedAccess
+    }
+    Restaurant "1" --> "0..*" MenuItem : offers
+    Cart "1" --> "0..*" CartItem : contains
+    CartItem --> MenuItem : selects
+    Cart --> Order : accepted submission creates
+    Order "1" --> "1..*" OrderedItem : preserves
+    Order "1" --> "0..*" StatusChange : records staff changes
+    Employee "1" --> "0..*" StatusChange : performs
+    note for Order "Conceptual product information only. No identifiers, storage formats, runtime classes or authentication design are prescribed."
+    note for OrderedItem "Accepted names and prices remain unchanged when the menu changes."

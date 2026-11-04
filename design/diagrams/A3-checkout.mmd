@@ -1,0 +1,24 @@
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant Product as Mesa Tica
+    Customer->>Product: Place reviewed pickup order
+    alt Same submission already accepted
+    Product-->>Customer: Original order number and confirmation, even after closing
+    else New submission needs correction
+    Product-->>Customer: No order created, retain cart and explain correction
+    Customer->>Product: Review corrected choices and submit deliberately
+    else Valid new submission
+    Product-->>Customer: Received order, unique number, accepted contents/total, private link
+    end
+    alt Result uncertain because connection failed
+    Product-->>Customer: Result not confirmed, recover this attempt before another order
+    Customer->>Product: Check or safely retry same submission
+    Product-->>Customer: Original accepted result or confirmed correction
+    end
+    Customer->>Product: Copy tracking link
+    alt Copy succeeds
+    Product-->>Customer: Copied feedback and save guidance
+    else Copy unavailable
+    Product-->>Customer: Selectable link and manual-copy guidance
+    end

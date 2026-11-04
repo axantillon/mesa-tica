@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant Product as Mesa Tica
+    Customer->>Product: Review cart
+    Product-->>Customer: Quantities, prices, subtotals and total
+    Customer->>Product: Edit quantity or remove item
+    alt Valid edit
+    Product-->>Customer: Updated cart and total
+    else Invalid quantity
+    Product-->>Customer: Correction near affected item, no silent replacement
+    end
+    alt Cart empty
+    Product-->>Customer: Empty-cart guidance, cannot place order
+    end

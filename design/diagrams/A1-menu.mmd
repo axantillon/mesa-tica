@@ -1,0 +1,17 @@
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant Product as Mesa Tica
+    Customer->>Product: Open menu
+    Product-->>Customer: Dishes, descriptions, prices and availability
+    alt Restaurant open
+    Product-->>Customer: Pickup ordering available
+    else Restaurant closed
+    Product-->>Customer: Browsing allowed, next opening shown, submission unavailable
+    end
+    Customer->>Product: Choose a dish
+    alt Available
+    Product-->>Customer: Add to cart
+    else Unavailable
+    Product-->>Customer: Explain unavailable, no addition
+    end

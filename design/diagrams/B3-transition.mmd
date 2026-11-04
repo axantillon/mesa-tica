@@ -1,0 +1,18 @@
+sequenceDiagram
+    autonumber
+    actor Employee
+    participant Product as Mesa Tica
+    Employee->>Product: Choose permitted next status
+    alt Cancel order
+    Product-->>Employee: Request reason and final confirmation, reason is customer-visible
+    Employee->>Product: Enter reason and confirm or dismiss
+    end
+    alt Stale action or another employee changed the order
+    Product-->>Employee: Reject change, show current state, no automatic retry
+    Employee->>Product: Deliberately choose a still-valid action after review
+    else Invalid transition or missing cancellation reason
+    Product-->>Employee: Explain correction, leave order unchanged
+    else Valid authorized change
+    Product-->>Employee: Confirm current status, record employee and time
+    end
+    Note over Employee,Product: Collected and Cancelled are final. Uncertain outcomes are refreshed before another deliberate action.

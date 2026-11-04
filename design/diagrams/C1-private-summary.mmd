@@ -1,0 +1,11 @@
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant Product as Mesa Tica
+    Customer->>Product: Open saved private link
+    alt Valid link
+    Product-->>Customer: Associated order number, accepted contents/total and status
+    else Missing or invalid link
+    Product-->>Customer: Check saved link, no order details or public lookup
+    end
+    Note over Customer,Product: No login or installation required. Anyone holding the private link can view that order.

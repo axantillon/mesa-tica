@@ -1,0 +1,20 @@
+stateDiagram-v2
+    [*] --> Received: accepted guest order
+    Received --> Preparing: employee starts preparation
+    Preparing --> Ready: employee confirms ready
+    Ready --> Collected: employee confirms handoff
+    Received --> Cancelled: employee confirms cancellation with reason
+    Preparing --> Cancelled: employee confirms cancellation with reason
+    Ready --> Cancelled: employee confirms cancellation with reason
+    Collected --> [*]
+    Cancelled --> [*]
+    note right of Received
+        Only authorized staff change status.
+        Accepted changes record employee and time.
+        Reject stale/conflicting actions and show current state.
+        A new attempt requires deliberate staff review.
+    end note
+    note right of Cancelled
+        Collected and Cancelled are final.
+        No customer edits/cancellation, undo or reopening.
+    end note

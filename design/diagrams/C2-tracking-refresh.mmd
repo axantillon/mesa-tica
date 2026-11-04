@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant Product as Mesa Tica
+    Customer->>Product: Leave tracking page open
+    loop While page open with working connection
+    Product-->>Customer: Automatically updated status and last successful check
+    end
+    alt Connection or updates fail
+    Product-->>Customer: Keep last status/time, warn information may be outdated
+    else Successful recovery
+    Product-->>Customer: Current status, new check time, clear warning
+    end
+    Note over Customer,Product: Never show a fabricated status before the first successful load.

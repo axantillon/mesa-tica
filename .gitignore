@@ -1,0 +1,6 @@
+# Local artifacts and credentials; implementation may extend this list.
+.DS_Store
+.env
+.env.*
+!.env.example
+artifacts/private/

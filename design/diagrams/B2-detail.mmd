@@ -1,0 +1,10 @@
+sequenceDiagram
+    autonumber
+    actor Employee
+    participant Product as Mesa Tica
+    Employee->>Product: Open order from queue
+    Product-->>Employee: Accepted number, time, items, quantities, prices, total and current state
+    Product-->>Employee: Staff status history and permitted next actions
+    Note over Employee,Product: Later menu changes do not alter accepted order details.
+    Employee->>Product: Return to queue
+    Product-->>Employee: Preserve selected filter

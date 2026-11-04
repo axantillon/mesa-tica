@@ -1,0 +1,18 @@
+flowchart LR
+    Customer["Guest customer: Maya / Helen"]
+    Staff["Authorized employee: Luis"]
+    Setup["Restaurant setup: menu, hours and staff access"]
+    Physical["Cooking, handoff and payment outside the app"]
+    subgraph Product["Mesa Tica pickup ordering"]
+        Ordering["Browse menu, edit cart, place order: A1-A3"]
+        Operations["See queue, inspect and update orders: B1-B3"]
+        Tracking["Open private link, check status and pickup: C1-C3"]
+    end
+    Customer --> Ordering
+    Customer --> Tracking
+    Staff --> Operations
+    Setup --> Product
+    Ordering -->|"Accepted order"| Operations
+    Operations -->|"Current status"| Tracking
+    Staff -.-> Physical
+    Customer -.->|"Collect and pay"| Physical

@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant Product as Mesa Tica
+    Customer->>Product: View current order state
+    alt Received or Preparing
+    Product-->>Customer: Not ready for collection
+    else Ready
+    Product-->>Customer: Ready, order number, pickup location/instructions and pay-at-collection
+    else Cancelled
+    Product-->>Customer: Cancellation reason and labeled restaurant contact
+    else Collected
+    Product-->>Customer: Collected confirmation, no further pickup action
+    end
+    Note over Customer,Product: If information is stale, retain the warning alongside these messages.

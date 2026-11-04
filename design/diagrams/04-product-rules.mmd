@@ -1,0 +1,10 @@
+flowchart TB
+    Review["Customer reviews selected dishes, quantities and total"] --> Check["Check valid items/quantities, current prices/availability and opening hours"]
+    Check -->|"Correction needed"| Correct["Explain correction, keep cart, create no order"]
+    Check -->|"Valid new submission"| Accept["Accept exactly one Received order; preserve contents/total; provide number and private link"]
+    Retry["Repeat the same submission after missing confirmation"] --> Recover["Recover same accepted result, including after closing; never create a duplicate"]
+    Conflict["Two staff actions based on the same observed order state"] --> One["Accept one; reject the stale action; show current state and require deliberate review"]
+    Link["Private tracking link"] --> Associated["Show only associated order; no order-number search or public directory"]
+    Lost["Updates unavailable"] --> Stale["Keep last known information/time and show warning; clear only after successful refresh"]
+    note1["Mechanisms for retries, access control, updates, persistence and conflict handling are implementation choices."]
+    note1 -.-> Accept

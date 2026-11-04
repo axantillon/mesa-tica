@@ -1,0 +1,1 @@
+Build the complete Mesa Tica pickup-ordering application described by the product documents listed in README.md. Make the implementation decisions yourself, implement and verify the working application, and document how to run and deploy it along with any incomplete or unverified behavior. Preserve the supplied product documents.
