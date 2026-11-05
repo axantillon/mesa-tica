@@ -5,9 +5,10 @@ export const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (char) 
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 
 export class RequestError extends Error {
-  constructor(status, code) {
-    super(code);
+  constructor(status, result) {
+    super(result.error ?? result.outcome);
     this.status = status;
+    this.result = result;
   }
 }
 
@@ -21,7 +22,7 @@ export async function request(path, body, { method = body === undefined ? 'GET' 
     cache: 'no-store',
   });
   const result = await response.json();
-  if (!response.ok) throw new RequestError(response.status, result.error);
+  if (!response.ok) throw new RequestError(response.status, result);
   return result;
 }
 
