@@ -1,0 +1,46 @@
+:root {
+  color-scheme: light;
+  --ink: #211c15;
+  --muted: #60574b;
+  --paper: #faf5e9;
+  --white: #fffdf7;
+  --line: #ded4c3;
+  --green: #173e30;
+  --lime: #e7f08d;
+  --rust: #963b27;
+  font: 16px/1.5 system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+a { color: var(--green); text-underline-offset: .2em; }
+:focus-visible { outline: 3px solid #ae532d; outline-offset: 3px; }
+.shell { width: min(72rem, 100% - 2rem); margin-inline: auto; }
+.site-header { background: var(--white); border-bottom: 1px solid var(--line); }
+.site-header .shell { min-height: 4.5rem; display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1rem; }
+.brand { font: bold 1.75rem/1 Georgia, serif; text-decoration: none; padding-block: .5rem; }
+.site-header span { color: var(--muted); font-size: .875rem; }
+.hero { background: var(--green); color: var(--white); border-radius: 1rem; margin-block: 1.5rem 2rem; padding: clamp(1.25rem, 5vw, 3rem); }
+.hero h1 { font: bold clamp(2.6rem, 8vw, 4.8rem)/1 Georgia, serif; margin-block: .45rem .85rem; }
+.eyebrow { font-size: .75rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.hero .eyebrow { color: var(--lime); }
+#opening { color: var(--lime); font-weight: 700; margin-top: 1.2rem; }
+#hours { font-size: .875rem; }
+.menu-group + .menu-group { margin-top: 1.75rem; }
+h2 { font: bold 1.8rem/1.15 Georgia, serif; margin-bottom: .65rem; }
+.menu-list { list-style: none; padding: 0; margin: 0; border: 1px solid var(--line); border-radius: .85rem; background: var(--white); }
+.dish { display: flex; align-items: center; justify-content: space-between; gap: .65rem; padding: 1rem; }
+.dish + .dish { border-top: 1px solid var(--line); }
+.dish h3 { font-size: 1.0625rem; }
+.dish p { color: var(--muted); font-size: .9rem; margin-top: .15rem; }
+.dish-actions { display: flex; align-items: center; justify-content: end; flex-wrap: wrap; gap: .5rem; flex-shrink: 0; max-width: 42%; }
+.badge { border-radius: 5rem; padding: .2rem .65rem; background: #eee6da; color: #554735; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+.notice { padding: .85rem; border-radius: .6rem; background: #f7e7ce; color: #63371c; }
+.site-footer { color: var(--muted); padding-block: 2rem; font-size: .875rem; }
