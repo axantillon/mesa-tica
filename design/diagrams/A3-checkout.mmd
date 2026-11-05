@@ -3,6 +3,7 @@ sequenceDiagram
     autonumber
     actor Customer
     participant UI as CustomerView
+    participant Cart as Cart
     participant C as OrderController
     participant S as CheckoutService
     participant O as OrderStore
@@ -10,45 +11,82 @@ sequenceDiagram
     participant R as RestaurantStore
     participant P as OpeningPolicy
     Customer->>UI: Place reviewed pickup order
+    UI->>UI: reviewAndSubmit()
+    alt No pending attempt
+    UI->>UI: beginAttempt()
+    Note over UI: Creates one attempt and fixes its selection as a copy of the reviewed cart.
+    else Pending attempt, result not yet known
+    UI->>UI: recoverPending()
+    Note over UI: Reuses the same attempt and its saved selection, never an edited cart. Repeated taps land here and can only resend this attempt. After a timeout the page offers Check order instead of Place, and Retry safely follows from A4.
+    end
+    UI->>UI: savePending()
+    Note over UI: Save the attempt and selection for same-browser recovery before the first send. Only the saved selection can be submitted with this attempt.
+    UI-->>Customer: Placing your order…
     UI->>C: submit(context, attempt, selection)
     C->>S: accept(context, attempt, selection)
     S->>O: findAccepted(context, attempt)
     alt Same attempt already accepted
-    O-->>S: Original order
+    O-->>S: Original order and its recorded selection
+    alt Same selection
     S->>S: buildConfirmation(order)
+    else Different selection
+    Note over S,O: An accepted attempt authorizes no other selection. No new order and no edit. The result says the different selection was not ordered.
+    S->>S: buildConfirmation(order)
+    end
     else Not already accepted
+    O-->>S: No accepted order, not proof of rejection
     S->>M: readCurrentMenu()
     M-->>S: Current item values and availability
     S->>R: readRestaurant()
-    R-->>S: Configured hours and timezone
+    R-->>S: Configured hours, timezone and contact
     S->>P: isOpen(restaurant, now)
-    P-->>S: Open or closed with next opening
+    P-->>S: Open or closed
+    opt Restaurant closed
+    S->>P: nextOpening(restaurant, now)
+    P-->>S: Next opening, or none in the weekly schedule
+    end
     S->>S: validateSelection(selection, menu)
-    alt Preliminary correction needed
+    Note over S: A valid selection yields the proposal: accepted lines and total at current prices.
+    alt Restaurant closed or preliminary correction needed
     S->>O: resolveRejectedAttempt(context, attempt)
     alt Same attempt accepted concurrently
     O-->>S: Original acceptance
     S->>S: buildConfirmation(order)
-    else No accepted order
-    O-->>S: No acceptance, no order created by rejected decision
-    Note over S,O: Return correction or changed-menu review with no order, preserving the cart.
+    else No acceptance, serialized with acceptOnce
+    O-->>S: Attempt closed, no order created by rejected decision
+    Note over S,O: Return correction or changed-menu review with no order, preserving the cart. When closed, give the next opening, or the contact information if none exists.
+    else Not serialized with acceptOnce
+    O-->>S: Unresolved, absence of an accepted record is not proof of rejection
     end
     else Preliminary checks valid
     S->>O: acceptOnce(context, attempt, selection, proposal)
     Note over S,O: Decisive boundary rechecks current acceptance conditions and serializes same-attempt outcomes. No particular locking or transaction mechanism is prescribed.
-    alt Accepted or identical concurrent acceptance
-    O-->>S: One accepted order, immutable contents and current status
+    alt New acceptance
+    O->>O: issuePrivateLink()
+    O-->>S: One new Received order, immutable contents, order number and private link
     S->>S: buildConfirmation(order)
-    else Conditions changed before acceptance
-    O-->>S: Correction or explicit review required, no new order
+    else Same attempt accepted concurrently
+    O-->>S: The same order and current status, a different selection is not ordered
+    S->>S: buildConfirmation(order)
+    else Conditions changed or attempt closed
+    O-->>S: Attempt closed, correction or explicit review required, no new order
     end
     end
     end
-    S-->>C: Accepted confirmation or correction
-    C-->>UI: Known result
+    S-->>C: Accepted confirmation, correction or unresolved
     alt Known acceptance
-    UI-->>Customer: Acceptance result, show confirmation under A5
+    C-->>UI: Known acceptance
+    UI-->>Customer: Acceptance result, show confirmation under A5, and say if a different selection was not ordered. Preserve unrelated cart choices.
     else Known rejection
-    UI-->>Customer: Explain correction, keep cart and require deliberate resubmission
+    C-->>UI: Known rejection and its correction
+    UI->>UI: clearPending()
+    UI->>Cart: applyCorrection(correction)
+    Cart-->>UI: Cart kept with current prices, unavailable items stay marked, no substitution or reduced quantity
+    UI-->>Customer: Explain the correction, or the next opening, or the contact information when none exists, keep cart and require deliberate resubmission, which begins a new attempt
+    else Unresolved
+    C-->>UI: Unresolved, pending attempt stays
+    UI-->>Customer: We couldn't confirm the result, check this order under A4 before placing another
+    else No response before timeout
+    UI-->>Customer: We couldn't confirm the result, pending attempt stays, check this order under A4 before placing another
     end
     Note over UI,O: Same-attempt duplicate prevention is always required. A4 handles uncertain outcomes, and A5 presents accepted confirmation without creating another order.

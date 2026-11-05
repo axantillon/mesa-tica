@@ -3,34 +3,57 @@ sequenceDiagram
     autonumber
     actor Employee
     participant UI as StaffView
+    participant U as UpdateCoordinator
     participant C as StaffOrderController
     participant Access as AccessService
     participant S as OrderService
     participant O as OrderStore
     participant L as OrderLifecycle
     Employee->>UI: Open order
-    UI->>C: getDetail(context, number)
+    UI->>U: observe(target, view)
+    loop Automatic refresh while detail open
+    U->>U: refresh(target)
+    alt Connection and service available
+    U->>C: getDetail(context, number)
     C->>Access: requireStaff(context)
-    alt Access denied
+    alt Access denied or expired
     Access-->>C: Denial
-    C-->>UI: No order data, access guidance
+    C-->>U: No order data, access guidance
+    U-->>UI: Stop protected updates and explain access state
+    UI-->>Employee: Sign-in required or access denied, no order data, typed reason kept
     else Authorized employee
     Access-->>C: Employee
     C->>S: getDetail(number)
     S->>O: readOrder(number)
     alt Order found
     O-->>S: Accepted lines/total, submission time, status/revision and staff history
-    S->>L: allowedActions(currentStatus)
+    S->>L: allowedActions(status)
     L-->>S: Permitted actions for this state
     S-->>C: Detail and permitted actions
-    C-->>UI: Current detail
-    UI-->>Employee: Accepted values, local time, history and actions
+    C-->>U: Current detail
+    U-->>UI: Newest response only, update successful check, clear stale warning, advance observedRevision unless an action is in progress
+    UI->>UI: showDetail(order)
+    UI-->>Employee: Accepted values, local time, history and actions, draft reason kept
     else Order not found
     O-->>S: Not found
     S-->>C: Unavailable order
-    C-->>UI: Explain unavailable, allow return to queue
+    C-->>U: Unavailable order
+    U-->>UI: Explain unavailable, allow return to queue
+    UI-->>Employee: Order unavailable, return to queue offered
     end
     end
-    Note over UI,O: Never reconstruct accepted names/prices from today's menu. Detail updates use the same authorized refresh path and retain draft input.
+    else No response before timeout, or refresh fails for connection or service reasons
+    U-->>UI: Keep prior detail/time, show stale warning
+    UI-->>Employee: Last known detail may be out of date, draft reason kept, no claim that a change succeeded
+    opt Connection recovers with valid access
+    UI->>U: recover(target)
+    U->>U: refresh(target)
+    U-->>UI: Clear warning only after successful current information
+    UI-->>Employee: Current detail, warning cleared
+    end
+    end
+    end
+    Note over UI,O: Never reconstruct accepted names/prices from today's menu. Detail updates use the same authorized refresh path and retain draft input. observedRevision advances to the revision of each newer detail shown, unless an action is in progress under B3. A response older than the detail shown is ignored.
     Employee->>UI: Return to queue
+    UI->>U: stop(target)
     UI-->>Employee: Previous selected filter

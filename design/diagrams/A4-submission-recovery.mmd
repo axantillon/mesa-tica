@@ -3,10 +3,16 @@ sequenceDiagram
     autonumber
     actor Customer
     participant UI as CustomerView
+    participant Cart as Cart
     participant C as OrderController
     participant S as CheckoutService
     participant O as OrderStore
     Customer->>UI: Return to an attempt with missing confirmation
+    UI->>UI: recoverPending()
+    Note over UI: Restores the same-browser attempt and its reviewed selection. If browser data was cleared, no recovery is promised.
+    alt Browser data was cleared
+    UI-->>Customer: No pending attempt, no recovery promised, a saved tracking link still opens its order
+    else Pending attempt found
     UI-->>Customer: Outcome uncertain, recover this attempt before placing another order
     Customer->>UI: Check order
     UI->>C: recover(context, attempt)
@@ -17,22 +23,37 @@ sequenceDiagram
     S->>S: buildConfirmation(order)
     S-->>C: Same order identity, accepted contents and tracking link
     C-->>UI: Accepted result for A5 confirmation
+    UI-->>Customer: Original order found, show confirmation under A5
     else Acceptance not yet established
-    O-->>S: No accepted record found, not proof of rejection
+    O-->>S: No accepted record for this customer context, not proof of rejection, no other customer's order exposed
+    Note over S,O: A closed attempt answers the same way here, and its correction comes from Retry safely, since recover holds no selection.
     S-->>C: Still unresolved
     C-->>UI: Retain pending attempt and original reviewed selection
+    UI-->>Customer: Still unconfirmed, offer Retry safely, pending attempt and selection kept
     Customer->>UI: Retry same attempt safely
-    UI->>C: submit(context, sameAttempt, sameSelection)
-    C->>S: accept(context, sameAttempt, sameSelection)
-    Note over S,O: Execute the complete A3 acceptance path, including current checks for a new acceptance and same-attempt serialization. Do not bypass validation or create a fresh attempt.
+    UI->>C: submit(context, attempt, selection)
+    C->>S: accept(context, attempt, selection)
+    Note over S,O: Same attempt and same saved selection. Execute the complete A3 acceptance path, including current checks for a new acceptance and same-attempt serialization. Do not bypass validation or create a fresh attempt.
     alt Original acceptance or valid new acceptance of same attempt
     S-->>C: One accepted order, original confirmation identity
     C-->>UI: Known acceptance for A5
+    UI-->>Customer: Order confirmed, show confirmation under A5
     else Confirmed rejection
-    S-->>C: Actionable correction, no accepted order
+    S-->>C: Actionable correction, no accepted order, attempt closed
     C-->>UI: Retain cart, allow deliberate correction
-    else Response still unavailable
+    UI->>UI: clearPending()
+    UI->>Cart: applyCorrection(correction)
+    Cart-->>UI: Cart kept with current prices, unavailable items stay marked
+    UI-->>Customer: Explain correction, keep cart, a corrected submission begins a new attempt
+    else Still unresolved
+    S-->>C: Still unresolved, pending attempt stays
+    C-->>UI: Retain pending attempt and original reviewed selection
+    UI-->>Customer: Remain uncertain, do not claim rejection or silently place another order
+    else No response before timeout
     UI-->>Customer: Remain uncertain, do not claim rejection or silently place another order
     end
+    else No response to Check order before timeout
+    UI-->>Customer: Remain uncertain, offer Check order again or Retry safely, pending attempt and selection kept
     end
-    Note over UI,O: Recovery cannot expose another customer's order. A deliberately new order is distinct from retrying this pending attempt.
+    end
+    Note over UI,O: Recovery cannot expose another customer's order. A deliberately new order is distinct from retrying this pending attempt and starts only after this result is known.

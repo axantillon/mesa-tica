@@ -22,12 +22,12 @@ flowchart TB
         Access --> Stores
     end
     Durable[("Durable data: restaurant/menu, accepted orders/lines, submissions, status history and staff access")]
-    Setup["Local setup and staff provisioning"]
+    Setup["SetupRunner: repeatable local setup and staff provisioning"]
     Customer -->|"Browse and submit/recover order"| Delivery
     Staff -->|"Sign in, inspect, change status"| Delivery
     Tracking -->|"Open private link"| Delivery
     Updates -->|"Read current authorized queue/detail or private snapshot"| Boundaries
     Stores --> Durable
-    Setup --> Durable
+    Setup --> Stores
     Decisions["Logical boundaries, not separately deployed microservices. Agent chooses framework, language, rendering, authentication mechanism, data technology, update transport and hosting. Acceptance and staff changes must preserve the specified indivisible consistency guarantees."]
     Decisions -.-> Backend

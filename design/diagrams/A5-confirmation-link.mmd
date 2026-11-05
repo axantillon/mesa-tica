@@ -1,12 +1,20 @@
-%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
+%%{init: {"sequence": {"wrap": true, "width": 240, "actorMargin": 35}}}%%
 sequenceDiagram
     autonumber
     actor Customer
     participant UI as CustomerView
+    participant Cart as Cart
     Note over Customer,UI: Begins only with a known acceptance result from A3 or A4. No new order is submitted here.
     UI->>UI: showConfirmation(confirmation)
-    UI-->>Customer: Accepted number, items/total, status and pay-at-collection guidance
-    UI->>UI: Clear purchased cart after known acceptance
+    alt Status Received
+    UI-->>Customer: Order received, accepted number, items/total, status and pay-at-collection guidance
+    else Recovered order has progressed
+    UI-->>Customer: Same number and items/total, current status and its next step, pay-at-collection guidance unless collected, not reset to Received
+    else Recovered order was cancelled
+    UI-->>Customer: Same number and items/total, this order was cancelled, view progress for the reason and contact under C3, no invitation to collect or pay
+    end
+    UI->>Cart: clearPurchased(selection)
+    UI->>UI: clearPending()
     UI-->>Customer: View progress and save/bookmark instructions, keep link private
     Customer->>UI: Copy tracking link
     UI->>UI: copyTrackingLink()

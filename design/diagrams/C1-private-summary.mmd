@@ -8,16 +8,23 @@ sequenceDiagram
     participant O as OrderStore
     Customer->>UI: Open saved private link
     UI->>C: getSummary(privateLink)
+    alt Connection and service available
     C->>S: getSnapshot(privateLink)
     S->>O: findByPrivateLink(privateLink)
     alt Valid link
     O-->>S: Associated accepted order
     S-->>C: Public summary, excluding employee identities/access details
     C-->>UI: Safe order snapshot
-    UI-->>Customer: Recognizable number, accepted items/total and status
+    UI->>UI: showSummary(snapshot)
+    UI-->>Customer: Recognizable number, submission time, accepted items/total and status
     else Missing or invalid link
     O-->>S: No accessible order
     S-->>C: Generic unavailable result, no order data
     C-->>UI: Link guidance, no numeric lookup
+    UI->>UI: showUnavailable()
+    UI-->>Customer: We couldn't open this tracking link, check the full saved link, no order details
+    end
+    else No response before timeout, or connection or service failure
+    UI-->>Customer: Updates are unavailable, no fabricated status or last-checked time, not reported as an invalid link
     end
     Note over Customer,O: Possession grants read access to this order only, not staff operations. No customer login or app installation.

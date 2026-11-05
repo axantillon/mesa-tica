@@ -14,6 +14,9 @@ classDiagram
         +editQuantity(item, quantity)
         +removeItem(item)
         +reviewAndSubmit()
+        +beginAttempt()
+        +savePending()
+        +clearPending()
         +recoverPending()
         +showConfirmation(confirmation)
         +copyTrackingLink()
@@ -67,12 +70,15 @@ classDiagram
     class Cart
     class CheckoutService
     class MenuService
+    class OrderFilter
     class OrderService
+    class SubmissionIdentity
     class TrackingService
     CustomerView --> MenuController
     CustomerView --> OrderController
     StaffView --> AuthController
     StaffView --> StaffOrderController
+    StaffView --> OrderFilter
     TrackingView --> TrackingController
     StaffView --> UpdateCoordinator
     TrackingView --> UpdateCoordinator
@@ -85,7 +91,9 @@ classDiagram
     StaffOrderController --> OrderService
     TrackingController --> TrackingService
     CustomerView "1" --> "1" Cart
-    note for UpdateCoordinator "Logical current-data responsibility. Polling, push, rendering strategy and<br/>scheduling are open. Preserve input and filter, record successful check<br/>only, retain stale data with warning and recover current information. Never<br/>automatically repeat a rejected or uncertain staff write."
+    CustomerView "1" --> "0..1" SubmissionIdentity : pending attempt
+    note for StaffView "observedRevision is the revision of the newest detail shown. It is fixed<br/>when an action is chosen, is the revision sent with that action, and<br/>advances to the newest detail received once the action is dismissed or its<br/>outcome is known. In requestChange and changeStatus, target is the<br/>requested status."
+    note for UpdateCoordinator "Ignore older responses. Preserve input and filter, record successful checks<br/>only and recover current information before clearing a stale warning.<br/>Timeouts are failures. Transport and scheduling are implementation choices.<br/>Never automatically repeat a rejected or uncertain staff write."
 ```
 
 ## Application services and business policies
@@ -124,6 +132,9 @@ classDiagram
         +allowedActions(status)
         +validateChange(status, target, reason)
     }
+    class SetupRunner {
+        +runSetup()
+    }
     class IdentityStore
     class MenuStore
     class OrderStore
@@ -140,8 +151,12 @@ classDiagram
     TrackingService --> OrderStore
     TrackingService --> RestaurantStore
     AccessService --> IdentityStore
-    note for CheckoutService "Early validation is for useful corrections, not final acceptance authority.<br/>resolveRejectedAttempt checks whether a racing identical attempt was<br/>accepted before presenting rejection. Proposals never authorize unreviewed<br/>price/item changes."
-    note for AccessService "All staff reads/writes require current authorized identity, including<br/>requests bypassing visible UI. Identity and credential handling may use<br/>framework-native facilities."
+    SetupRunner --> RestaurantStore
+    SetupRunner --> MenuStore
+    SetupRunner --> IdentityStore
+    note for CheckoutService "Early validation is for useful corrections, not final acceptance authority.<br/>resolveRejectedAttempt checks whether a racing identical attempt was<br/>accepted before presenting rejection. A proposal is the result of a valid<br/>validateSelection: accepted lines and total at current prices, a value and<br/>not a class, rechecked by acceptOnce. Proposals never authorize unreviewed<br/>price/item changes."
+    note for AccessService "All staff reads/writes require current authorized identity, including<br/>requests bypassing visible UI. In staff calls, context is the signed-in<br/>staff session. Identity and credential handling may use framework-native<br/>facilities."
+    note for SetupRunner "Documented, noninteractive and safe to repeat. Loads the supplied<br/>restaurant and menu only if absent, never resets existing passwords and<br/>never deletes orders. The implementation chooses when and how setup runs."
 ```
 
 ## Persistence handlers
@@ -151,14 +166,17 @@ classDiagram
     direction TB
     class MenuStore {
         +readCurrentMenu()
+        +loadMenuIfAbsent(menu)
     }
     class RestaurantStore {
         +readRestaurant()
+        +loadRestaurantIfAbsent(restaurant)
     }
     class OrderStore {
         +findAccepted(context, attempt)
         +acceptOnce(context, attempt, selection, proposal)
         +resolveRejectedAttempt(context, attempt)
+        +issuePrivateLink()
         +listOrders(filter)
         +readOrder(number)
         +findByPrivateLink(privateLink)
@@ -180,7 +198,7 @@ classDiagram
     OrderStore --> Order
     OrderStore --> SubmissionIdentity
     IdentityStore --> Employee
-    note for OrderStore "acceptOnce is one indivisible acceptance decision: same scoped attempt<br/>returns the same order identity/contents and current status before<br/>new-order checks, otherwise validates current hours/menu and records<br/>exactly one order with accepted lines. A failed decision creates no order.<br/>changeIfCurrent checks observed revision, lifecycle and reason and records<br/>order plus employee/time history together. Mechanisms belong to<br/>implementation."
+    note for OrderStore "acceptOnce is one indivisible acceptance decision: same scoped attempt<br/>returns the same order identity/contents and current status before<br/>new-order checks, otherwise validates current hours/menu and records<br/>exactly one order with accepted lines. A definitive rejection creates no<br/>order and closes the attempt. A transient failure leaves the outcome<br/>unresolved. resolveRejectedAttempt is serialized with acceptOnce: it<br/>returns the accepted order or closes the attempt, and reports unresolved if<br/>it cannot be serialized. A closed attempt can never be accepted.<br/>issuePrivateLink runs once, only for a new order inside acceptOnce.<br/>changeIfCurrent checks observed revision, lifecycle and reason and records<br/>order plus employee/time history together. Mechanisms belong to<br/>implementation."
 ```
 
 ## Product entities and values
@@ -208,9 +226,12 @@ classDiagram
     }
     class Cart {
         +CartItemList items
+        +add(item)
         +changeQuantity(item, quantity)
         +remove(item)
         +calculateTotal()
+        +applyCorrection(correction)
+        +clearPurchased(selection)
     }
     class CartItem {
         +ItemReference item
@@ -221,6 +242,8 @@ classDiagram
     class SubmissionIdentity {
         +AttemptReference reference
         +CustomerContext customerContext
+        +CartItemList selection
+        +AttemptOutcome outcome
     }
     class Order {
         +OrderNumber number
@@ -267,6 +290,16 @@ classDiagram
         Collected
         Cancelled
     }
+    class OrderFilter {
+        <<enumeration>>
+        Active
+        Received
+        Preparing
+        Ready
+        Collected
+        Cancelled
+        All
+    }
     CartItem --> MenuItem
     Order --> OrderStatus
     MenuItem --> Money
@@ -278,7 +311,8 @@ classDiagram
     Employee "1" --> "0..*" StatusChange
     SubmissionIdentity "1" --> "0..1" Order : accepted attempt
     Confirmation --> Order : summarizes
-    note for SubmissionIdentity "Logical identity of one customer's submission. Absence of an accepted<br/>record alone is not proof that an in-flight attempt was rejected. No UUID,<br/>session/cookie scheme, storage representation or lifetime is prescribed.<br/>Accepted identity cannot authorize a different selection or expose another<br/>customer's order."
-    note for Order "Accepted contents and totals are immutable. Revision is an opaque<br/>observed-state marker, not a prescribed database field type. PrivateLink<br/>grants read access only to this order."
+    note for SubmissionIdentity "Logical identity of one customer's submission. reference, customerContext<br/>and selection are the attempt, context and selection values in A3 and A4<br/>calls. selection is the reviewed copy of the cart, fixed when the attempt<br/>begins. CustomerView retains it for same-browser recovery until the result<br/>is known, and OrderStore records it with an accepted attempt. outcome is<br/>pending, accepted or closed. A known rejection closes the attempt and a<br/>correction begins a new one. Absence of an accepted record alone is not<br/>proof that an in-flight attempt was rejected. No UUID, session/cookie<br/>scheme, storage representation or lifetime is prescribed. The same attempt<br/>cannot authorize a different selection or expose another customer's order."
+    note for Order "Accepted contents and totals are immutable. Revision is an opaque<br/>observed-state marker, not a prescribed database field type. OrderNumber is<br/>short and human-readable for pickup, and grants no online access.<br/>PrivateLink is random with at least 128 bits of entropy, issued once with<br/>the order and never regenerated on retry. It grants read access only to<br/>this order."
     note for Money "Exact monetary meaning, not a prescribed numeric storage representation.<br/>Other named types denote product values or collections, not extra mandatory<br/>runtime classes."
+    note for OrderFilter "Active is the default: Received, Preparing and Ready. Each status filter<br/>shows that status. All shows every retained order."
 ```
