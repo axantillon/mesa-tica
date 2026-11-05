@@ -37,8 +37,10 @@ observe('/api' + location.pathname, {
       return false;
     }
     if (!hasSnapshot) content.textContent = '';
-    const text = hasSnapshot ? 'Updates are unavailable. This status may be out of date.'
-      : 'Updates are unavailable. Trying again…';
+    const text = currentStatus === 'Ready'
+      ? 'Updates are unavailable. This status may be out of date. Check again before heading to the pickup counter.'
+      : hasSnapshot ? 'Updates are unavailable. This status may be out of date.'
+        : 'Updates are unavailable. Trying again…';
     if (warning.textContent !== text) warning.textContent = text;
     warning.hidden = false;
   },

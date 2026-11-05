@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "setup": "node src/setup.js",
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:browser": "node verification/run-browser.js"
   }
 }

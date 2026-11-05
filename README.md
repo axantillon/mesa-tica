@@ -17,3 +17,7 @@ Pickup ordering for one restaurant. Guests browse the menu, place an order and f
 The specification governs business rules; the restaurant/menu document supplies concrete content. Stories and experience guidance explain the product. The architecture, detailed design and sequences define the logical responsibilities that realize it. In a minor ambiguity, preserve the specification's behavior and make a practical choice. Quality targets require measurement and are not a prerequisite for beginning implementation.
 
 Rendered design: [diagram gallery](design/diagram-gallery.md) · [detailed class views](design/class-views.md).
+
+## Run and verify
+
+Use Node.js 24. Run `npm run setup` and `npm start`, then open http://127.0.0.1:3000. For staff sign-in, test commands, architecture and deployment steps, see [implementation](docs/implementation.md). See also [acceptance results](docs/verification.md) and the [remaining backlog](docs/backlog.md).

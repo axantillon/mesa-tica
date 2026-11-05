@@ -70,7 +70,9 @@ test('HTTP staff access, audited lifecycle, privacy and restart', async (t) => {
   const ids = [first, second, third].map((item) => item.data.order.number);
   const [a, b, c] = ids;
   assert.deepEqual((await staff('orders', { cookie: luis })).data.orders.map((order) => order.number), ids);
-  assert.equal((await staff('orders?filter=Ready', { cookie: luis })).data.orders.length, 0);
+  const filtered = async (filter) => (await staff('orders?filter=' + filter, { cookie: luis })).data.orders.map((order) => order.number);
+  assert.deepEqual(await filtered('Received'), ids);
+  assert.deepEqual(await filtered('Ready'), []);
   assert.equal((await orderRequest(a, first.data.trackingPath.split('/').at(-1))).code, 401);
   assert.equal((await staff(orderPath(a), {
     cookie: luis, body: { revision: 0, target: 'Preparing' }, headers: { 'Sec-Fetch-Site': 'same-site' },
@@ -100,7 +102,9 @@ test('HTTP staff access, audited lifecycle, privacy and restart', async (t) => {
   clock = '2026-11-06T03:00:01Z';
   assert.equal((await orderRequest(b, luis, { revision: 0, target: 'Preparing' })).code, 200);
   assert.equal((await track(second)).data.order.status, 'Preparing');
+  assert.deepEqual(await filtered('Preparing'), winner.data.order.status === 'Preparing' ? [a, b] : [b]);
   assert.equal((await orderRequest(b, luis, { revision: 1, target: 'Ready' })).code, 200);
+  assert.deepEqual(await filtered('Ready'), [b]);
   const ready = (await track(second)).data;
   assert.equal(ready.order.status, 'Ready');
   assert.equal(ready.guidance.pickupLocation, 'Mesa Tica pickup counter');

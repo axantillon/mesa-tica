@@ -95,7 +95,8 @@ function dishFor(code) {
   return snapshot?.menu.find((dish) => dish.code === code);
 }
 
-const totalFor = (cart) => cart.reduce((total, line) => total + line.price * line.quantity, 0);
+const subtotal = (line) => BigInt(line.price) * BigInt(line.quantity);
+const totalFor = (cart) => cart.reduce((total, line) => total + subtotal(line), 0n);
 const quantityHint = 'Enter a whole number greater than zero.';
 
 function inspect(line) {
@@ -110,7 +111,9 @@ function inspect(line) {
 function renderActions() {
   const pending = state.pending;
   const issues = state.cart.map(inspect);
-  const invalid = state.cart.some((line) => drafts.has(line.code)) || !Number.isSafeInteger(totalFor(state.cart));
+  const total = totalFor(state.cart);
+  const totalTooLarge = total > BigInt(Number.MAX_SAFE_INTEGER);
+  const invalid = state.cart.some((line) => drafts.has(line.code)) || totalTooLarge;
   const blocked = !snapshot?.opening.open || unavailable || !storageAvailable || !state.cart.length ||
     invalid || issues.some((issue) => issue.unavailable || issue.repriced);
   const notice = !storageAvailable ? 'Browser storage is unavailable. Enable it and reload to order safely.'
@@ -125,8 +128,9 @@ function renderActions() {
     <div class="total"><span>Reviewed total</span><strong>${money(totalFor(pending.selection))}</strong></div>
     <div class="actions"><button class="button" data-action="check" ${working ? 'disabled' : ''}>Check order</button>
     <button class="button quiet" data-action="retry" ${working ? 'disabled' : ''}>Retry safely</button></div>`
-    : `<div class="total"><span>Total</span><strong>${money(totalFor(state.cart))}</strong></div>
+    : `<div class="total"><span>Total</span><strong>${money(total)}</strong></div>
       <p class="small">Pay at collection · Prices include taxes</p>
+      ${totalTooLarge ? '<p class="field-error">The total is too large. Reduce the quantity.</p>' : ''}
       ${!snapshot || unavailable ? '<p class="small">Waiting for current menu and ordering hours.</p>'
         : !snapshot.opening.open ? `<p class="small">${escape(openingText(snapshot))}</p>` : ''}
       ${issues.some((issue) => issue.repriced) ? '<button class="button quiet full" data-action="review">Review updated prices</button>' : ''}
@@ -140,21 +144,23 @@ function renderActions() {
       if (next && !next.disabled) next.focus();
     }
   }
-  const count = (pending?.selection ?? state.cart).reduce((sum, line) => sum + line.quantity, 0);
-  $('#cart-shortcut').textContent = pending ? 'Check your order' : `View cart · ${count} · ${money(totalFor(state.cart))}`;
+  const count = (pending?.selection ?? state.cart).reduce((sum, line) => sum + BigInt(line.quantity), 0n);
+  $('#cart-shortcut').textContent = pending ? 'Check your order' : `View cart · ${count} · ${money(total)}`;
   $('#cart-shortcut').hidden = !count || Boolean(state.receipt);
 }
 
 function renderCart() {
   const cart = state.pending?.selection ?? state.cart;
-  const activeCode = document.activeElement?.dataset.quantity ?? document.activeElement?.dataset.remove;
-  const activeType = document.activeElement?.dataset.quantity === undefined ? 'remove' : 'quantity';
+  const focused = document.activeElement;
+  const activeCode = focused?.dataset.quantity ?? focused?.dataset.remove;
+  const activeType = focused?.dataset.quantity === undefined ? 'remove' : 'quantity';
+  const selection = activeType === 'quantity' ? [focused.selectionStart, focused.selectionEnd] : null;
   const list = $('#cart-lines');
   list.innerHTML = cart.length ? `<ul class="cart-list">${cart.map((line) => {
     const issue = state.pending ? {} : inspect(line);
     const draft = drafts.get(line.code);
     return `<li>
-      <div class="cart-line-head"><strong>${escape(line.name)}</strong><strong data-subtotal="${escape(line.code)}">${money(line.price * line.quantity)}</strong></div>
+      <div class="cart-line-head"><strong>${escape(line.name)}</strong><strong data-subtotal="${escape(line.code)}">${money(subtotal(line))}</strong></div>
       <p class="small">${money(line.price)} each</p>
       ${state.pending ? `<p>Quantity ${line.quantity}</p>` : `
         <div class="cart-controls">
@@ -169,7 +175,8 @@ function renderCart() {
   }).join('')}</ul>` : '<p class="small">Your cart is empty. Choose a dish from the menu to get started.</p>';
   if (activeCode) {
     const control = [...list.querySelectorAll(`[data-${activeType}]`)].find((item) => item.dataset[activeType] === activeCode);
-    (control ?? $('#cart-heading')).focus();
+    (control ?? $('#cart-heading')).focus({ preventScroll: Boolean(control) });
+    if (control && selection) control.setSelectionRange(...selection);
   }
   renderActions();
 }
@@ -191,9 +198,9 @@ function render({ focusReceipt = false } = {}) {
     const { order, trackingPath } = result;
     const title = order.status === 'Received' ? 'Order received' : 'Order ' + order.status.toLowerCase();
     receipt.innerHTML = `
-      <p class="eyebrow">Pickup order · ${orderNumber(order.number)}</p>
+      <p class="eyebrow">Pickup confirmation</p>
       <h1 tabindex="-1">${title}</h1>
-      ${badge(order.status)}
+      <div class="queue-title"><strong>Order ${orderNumber(order.number)}</strong> ${badge(order.status)}</div>
       <p>${statusMessage[order.status]}</p>
       ${result.differentSelection ? '<p class="notice">A different selection was not ordered. Your original order is shown below.</p>' : ''}
       ${['Cancelled', 'Collected'].includes(order.status) ? '' : '<p><strong>Pay at collection.</strong> Show your order number at the Mesa Tica pickup counter.</p>'}
@@ -258,12 +265,13 @@ async function submit(action) {
       customer: state.customer, ...pending,
     });
     if (result.outcome === 'accepted') {
-      await update((latest) => {
+      const confirm = (latest) => {
         if (latest.pending?.attempt !== pending.attempt) return false;
         if (!result.differentSelection) latest.cart = [];
         latest.pending = null;
         latest.receipt = result;
-      });
+      };
+      if (!await update(confirm) && !storageAvailable) confirm(state);
     } else if (result.outcome === 'rejected') {
       await update((latest) => {
         if (latest.pending?.attempt !== pending.attempt) return false;
@@ -329,7 +337,8 @@ $('#cart').addEventListener('input', async ({ target }) => {
     });
     if (!saved) return render();
     const line = state.cart.find((item) => item.code === code);
-    target.closest('li').querySelector('[data-subtotal]').textContent = money(line.price * line.quantity);
+    if (!target.isConnected) return;
+    target.closest('li').querySelector('[data-subtotal]').textContent = money(subtotal(line));
   } else {
     drafts.set(code, raw);
   }
@@ -368,6 +377,7 @@ $('#receipt').addEventListener('click', async ({ target }) => {
   const action = target.closest('[data-action]')?.dataset.action;
   if (action === 'new') {
     await update((latest) => { latest.receipt = null; });
+    drafts.clear();
     correction = '';
     render();
     $('#hero h1').setAttribute('tabindex', '-1');
@@ -394,6 +404,10 @@ window.addEventListener('storage', ({ key }) => {
 });
 
 $('#cart-notice').tabIndex = -1;
-$('#cart-shortcut').addEventListener('click', () => $('#cart-heading').focus({ preventScroll: true }));
+$('#cart-shortcut').addEventListener('click', (event) => {
+  event.preventDefault();
+  $('#cart-heading').focus({ preventScroll: true });
+  $('#cart').scrollIntoView({ block: 'start' });
+});
 render();
 await refreshMenu();
