@@ -10,14 +10,26 @@
 <body>
   <header class="site-header"><div class="shell"><a class="brand" href="/">Mesa Tica</a><span>Pickup ordering</span></div></header>
   <main class="shell" id="main">
-    <section class="hero">
+    <section class="hero" id="hero">
       <p class="eyebrow">Costa Rican kitchen · Fictional demo</p>
       <h1>Pickup menu</h1>
       <p>Pickup only. Pay at collection. Keep your tracking link private.</p>
       <p id="opening" role="status">Checking ordering hours…</p>
       <p id="hours"></p>
     </section>
-    <div id="layout"><section id="menu" aria-label="Menu"><p role="status">Loading menu…</p></section></div>
+    <div id="layout">
+      <section id="menu" aria-label="Menu"><p role="status">Loading menu…</p></section>
+      <section id="cart" class="panel" aria-labelledby="cart-heading">
+        <p class="eyebrow">Pickup at Mesa Tica</p>
+        <h2 id="cart-heading" tabindex="-1">Your cart</h2>
+        <div id="cart-notice" role="status"></div>
+        <div id="cart-lines"></div>
+        <div id="cart-actions"></div>
+      </section>
+    </div>
+    <section id="receipt" class="panel narrow" hidden></section>
+    <div class="cart-dock"><a href="#cart" class="button" id="cart-shortcut" hidden>View cart</a></div>
+    <p id="announcer" class="sr-only" role="status"></p>
   </main>
   <footer class="shell site-footer">Mesa Tica pickup counter · Fictional restaurant</footer>
 </body>

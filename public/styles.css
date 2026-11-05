@@ -44,3 +44,62 @@ h2 { font: bold 1.8rem/1.15 Georgia, serif; margin-bottom: .65rem; }
 .badge { border-radius: 5rem; padding: .2rem .65rem; background: #eee6da; color: #554735; font-size: .78rem; font-weight: 700; white-space: nowrap; }
 .notice { padding: .85rem; border-radius: .6rem; background: #f7e7ce; color: #63371c; }
 .site-footer { color: var(--muted); padding-block: 2rem; font-size: .875rem; }
+
+[hidden] { display: none !important; }
+#layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem); align-items: start; gap: clamp(1rem, 3vw, 2rem); }
+.panel { background: var(--white); border: 1px solid var(--line); border-radius: 1rem; padding: clamp(1rem, 3vw, 1.5rem); }
+.panel > .eyebrow { color: var(--rust); margin-bottom: .55rem; }
+.panel > p + p { margin-top: .65rem; }
+.panel h1 { font: bold clamp(2rem, 6vw, 3.4rem)/1.08 Georgia, serif; margin-bottom: 1rem; }
+.narrow { width: min(100%, 40rem); margin: 2rem auto 0; }
+#cart { position: sticky; top: 1rem; scroll-margin: 1rem; }
+#cart-notice { margin-block: .65rem; }
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: .55rem .9rem; border: 1px solid transparent; border-radius: .55rem; background: var(--green); color: white; cursor: pointer; font: inherit; font-weight: 700; line-height: 1.25; text-decoration: none; text-align: center; transition: background-color .12s, scale .12s; }
+.button:hover:not(:disabled) { background: #245d48; }
+.button:active:not(:disabled) { scale: .96; }
+.button.quiet { background: #f1eee2; color: var(--green); border-color: var(--line); }
+.button.quiet:hover:not(:disabled) { background: #e6ead8; }
+.button.text { background: transparent; color: var(--green); text-decoration: underline; text-underline-offset: .2em; }
+.button.text:hover:not(:disabled) { background: #f2eee3; }
+.button:disabled { background: #ece8de; color: #665f53; cursor: not-allowed; }
+.button.full { width: 100%; margin-top: .7rem; }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .8rem; }
+.cart-list, .summary-lines { margin: .7rem 0 0; padding: 0; list-style: none; }
+.cart-list > li, .summary-lines > li { padding: .7rem 0; border-top: 1px solid var(--line); }
+.cart-line-head, .total, .summary-lines > li { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.cart-line-head > :last-child, .total > :last-child, .summary-lines > li > :last-child { flex-shrink: 0; }
+.total { font-size: 1.17rem; font-weight: 700; border-top: 1px solid var(--line); padding-top: .65rem; margin-block: .55rem .4rem; }
+.cart-controls { display: flex; justify-content: space-between; align-items: center; margin-top: .25rem; }
+.cart-controls label { display: flex; gap: .55rem; align-items: center; }
+input, textarea, select { max-width: 100%; min-height: 44px; padding: .5rem .65rem; border: 1px solid #9b8e7b; border-radius: .45rem; background: white; color: var(--ink); font: inherit; }
+input[aria-invalid="true"] { border-color: var(--rust); }
+.cart-controls input { width: 5.5rem; }
+.field-error { color: #8b311d; font-size: .875rem; margin-top: .25rem; }
+.small, small { color: var(--muted); font-size: .875rem; }
+.cart-dock { display: none; }
+#manual-copy { display: block; }
+#tracking-url { display: block; width: 100%; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.status-ready { background: #dfedc7; color: #234222; }
+.status-cancelled { background: #f6ddd3; color: #74301e; }
+
+@media (max-width: 48rem) {
+  #layout { grid-template-columns: minmax(0, 1fr); }
+  #cart { position: static; }
+  .cart-dock { display: flex; justify-content: center; position: sticky; bottom: .65rem; z-index: 1; width: fit-content; margin: .75rem auto 0; }
+  .cart-dock .button { box-shadow: 0 2px 5px #1c211629, 0 8px 20px #1c211625; }
+  #cart { scroll-margin-bottom: 4rem; }
+  .site-footer { padding-bottom: 4rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button { transition: none; }
+  .button:active:not(:disabled) { scale: 1; }
+}
+
+.tracking-state { margin-block: .85rem 1rem; padding: .9rem; background: #f3f0e6; border-radius: .65rem; }
+.tracking-state p { margin-top: .55rem; }
+.tracking-state strong { margin-left: .15rem; }
+.reason { white-space: pre-wrap; overflow-wrap: anywhere; }
+#tracking-warning { margin-bottom: .75rem; }
+#checked { margin-top: 1rem; }

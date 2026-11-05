@@ -16,3 +16,9 @@ Open http://127.0.0.1:3000. Setup generates Luis and Elena's passwords in the ig
 ## Milestones
 
 1. Runnable menu foundation, persisted sample configuration, repeatable provisioning and restaurant-local opening policy.
+
+2. Customer cart, reviewed checkout, durable same-attempt recovery, confirmation and private tracking.
+
+The cart and its pending selection share one local storage record. The browser's Web Locks API serializes edits and checkout initiation across tabs. An attempt carries a browser-scoped random credential, a separate attempt ID and the frozen reviewed selection. SQLite serializes lookup, rejection and acceptance under `BEGIN IMMEDIATE`. Existing acceptance is returned first, including after hours, and an existing rejection is definitive. The database stores accepted order lines independently of the menu.
+
+Private tracking uses a 256-bit random URL token, a customer-only projection and a two-second polling interval after each completed request. Links work without a login. The origin that serves the link must be reachable from the device opening it.
