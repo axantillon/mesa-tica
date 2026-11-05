@@ -103,3 +103,33 @@ input[aria-invalid="true"] { border-color: var(--rust); }
 .reason { white-space: pre-wrap; overflow-wrap: anywhere; }
 #tracking-warning { margin-bottom: .75rem; }
 #checked { margin-top: 1rem; }
+
+.site-footer a { display: inline-block; margin-left: .75rem; padding-block: .65rem; }
+.staff-main { padding-top: 1.5rem; }
+.staff-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.staff-heading h1 { font: bold clamp(2.4rem, 6vw, 3.5rem)/1.08 Georgia, serif; margin-top: .25rem; }
+.staff-heading .actions { align-items: center; margin-block: 0; }
+#queue-tools { display: flex; align-items: center; gap: .75rem; margin-bottom: .8rem; }
+#staff-warning, #staff-feedback { margin-block: .65rem; }
+#staff-checked { margin-block: .55rem; }
+.field-stack { display: grid; gap: .6rem; margin-top: 1rem; }
+.field-stack label { display: grid; gap: .2rem; font-weight: 650; }
+.field-stack textarea { width: 100%; min-height: 6.5rem; resize: vertical; }
+.queue-list { list-style: none; padding: 0; display: grid; gap: .55rem; }
+.queue-card { display: grid; gap: .25rem; padding: .85rem 1rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--white); color: var(--ink); text-decoration: none; }
+.queue-card:hover { background: #f4f4e8; }
+.queue-title { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.detail-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1rem; align-items: start; }
+.history { padding-left: 1.4rem; }
+.history li + li { margin-top: .55rem; }
+dialog { width: min(28rem, 100% - 2rem); max-height: 90dvh; overflow: auto; border: 1px solid var(--line); border-radius: 1rem; background: var(--white); color: var(--ink); padding: 1.2rem; }
+dialog::backdrop { background: #211c1577; }
+dialog .field-stack { margin-top: 0; }
+dialog .actions { margin-block: .3rem 0; }
+.button.danger { background: #8b311d; }
+.button.danger:hover:not(:disabled) { background: #692515; }
+.button.danger:disabled { background: #ece8de; }
+
+@media (max-width: 48rem) {
+  .detail-grid { grid-template-columns: 1fr; }
+}

@@ -94,9 +94,9 @@ export function acceptOrder(db, body, now) {
     if (previous) return JSON.parse(previous.rejection);
 
     const restaurant = readRestaurant(db);
+    const proposal = validateSelection(selection, readMenu(db));
     const time = now();
     const opening = openingState(restaurant, time);
-    const proposal = validateSelection(selection, readMenu(db));
     const issue = opening.open ? proposal.issue : 'closed';
     if (issue) {
       const result = { outcome: 'rejected', issue, opening, corrections: proposal.corrections ?? [] };
