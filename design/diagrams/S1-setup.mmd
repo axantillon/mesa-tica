@@ -1,0 +1,20 @@
+%%{init: {"sequence": {"wrap": true, "width": 200, "actorMargin": 35}}}%%
+sequenceDiagram
+    autonumber
+    actor Operator
+    participant Run as SetupRunner
+    participant R as RestaurantStore
+    participant M as MenuStore
+    participant I as IdentityStore
+    Operator->>Run: Run documented noninteractive setup
+    Run->>Run: runSetup()
+    Run->>R: loadRestaurantIfAbsent(restaurant)
+    R-->>Run: Restaurant details available, existing values preserved
+    Run->>M: loadMenuIfAbsent(menu)
+    M-->>Run: Menu available without duplicate entries
+    loop Each sample employee, at least two distinguishable accounts
+    Run->>I: provisionEmployee(profile, credentials)
+    I-->>Run: Staff account available, existing credentials unchanged
+    end
+    Run-->>Operator: Local run and sign-in instructions
+    Note over Operator,I: Initial setup creates no customer orders. Repeated setup preserves orders and history. Use isolated test data to exercise open, closed and changed-menu cases. Normal ordering always applies configured hours.

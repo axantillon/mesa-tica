@@ -9,12 +9,15 @@ sequenceDiagram
     participant R as RestaurantStore
     Customer->>UI: View order progress
     UI->>C: getSummary(privateLink)
+    alt Connection and service available
     C->>S: getSnapshot(privateLink)
     S->>O: findByPrivateLink(privateLink)
     alt Link unavailable
     O-->>S: No accessible order
     S-->>C: Generic unavailable result
     C-->>UI: No order information
+    UI->>UI: showUnavailable()
+    UI-->>Customer: We couldn't open this tracking link, check the full saved link, no order details
     else Valid associated order
     O-->>S: Accepted order/status and cancellation reason if any
     S->>R: readRestaurant()
@@ -23,13 +26,17 @@ sequenceDiagram
     alt Received or Preparing
     S-->>C: Not ready for pickup
     else Ready
-    S-->>C: Number, pickup instructions and payment-at-collection
+    S-->>C: Number, pickup instructions, pickup location and payment-at-collection
     else Cancelled
     S-->>C: Customer-visible reason and labeled contact
     else Collected
     S-->>C: Collected, no further pickup action
     end
     C-->>UI: Safe summary and matching guidance
+    UI->>UI: showInstructions(snapshot)
     UI-->>Customer: Status-specific next step
+    end
+    else No response before timeout, or connection or service failure
+    UI-->>Customer: Updates are unavailable, no fabricated status, pickup guidance or last-checked time
     end
     Note over UI,S: Existing stale warning remains until a successful current read. No preparation ETA or extra notification requirement.

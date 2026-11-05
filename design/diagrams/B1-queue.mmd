@@ -11,17 +11,28 @@ sequenceDiagram
     participant S as OrderService
     participant O as OrderStore
     Employee->>UI: Sign in
+    UI->>UI: signIn()
     UI->>A: signIn(credentials)
     A->>Access: signIn(credentials)
     Access->>I: authenticate(credentials)
     I-->>Access: Access context or generic failure
     Access-->>A: Sign-in outcome
-    A-->>UI: Actual sign-in outcome
     alt Sign-in failed
+    A-->>UI: Actual sign-in outcome
     UI-->>Employee: Generic correction, no order data
+    else No response before timeout, or service failure
+    UI-->>Employee: Could not reach sign-in, try again, credentials not blamed, no order data
     else Authorized access available
-    UI->>U: observe(queue with selected filter, view)
+    A-->>UI: Actual sign-in outcome
+    UI->>U: observe(target, view)
+    Note over UI,U: The target is the queue with the chosen filter. Active is the default.
     loop Automatic refresh while queue open
+    opt Employee chooses a filter
+    Employee->>UI: Choose filter
+    UI->>U: observe(target, view)
+    end
+    U->>U: refresh(target)
+    alt Connection and service available
     U->>C: listQueue(context, filter)
     C->>Access: requireStaff(context)
     Access->>I: resolveAccess(context)
@@ -30,28 +41,46 @@ sequenceDiagram
     Access-->>C: Employee
     C->>S: listQueue(filter)
     S->>O: listOrders(filter)
-    O-->>S: Matching orders oldest first with stable tie-break
+    O-->>S: Matching orders oldest first with stable tie-break, or none
     S-->>C: Queue snapshot
     C-->>U: Successful current information
     U-->>UI: Preserve filter, update successful check, clear stale warning
+    UI->>UI: showQueue(orders)
+    alt Orders match the filter
+    UI-->>Employee: Queue oldest first, last successful refresh time
+    else No orders match
+    UI-->>Employee: No active orders on the default filter, otherwise no orders match this filter, with last successful refresh time, distinct from a failed load
+    end
     else Access denied or expired
     Access-->>C: Denial without staff data
     C-->>U: Sign-in required or access denied
     U-->>UI: Stop protected updates and explain access state
+    UI-->>Employee: Sign-in required or access denied, no order data
     end
-    end
-    opt Refresh fails for connection or service reasons
+    else No response before timeout, or refresh fails for connection or service reasons
     U-->>UI: Keep prior data/time, show stale warning
-    end
+    UI-->>Employee: Last known queue and refresh time with stale warning, or a failed-load state if nothing has loaded yet
     opt Connection recovers with valid access
-    UI->>U: recover(queue target)
-    U->>U: refresh(target) through same authorized read
+    UI->>U: recover(target)
+    U->>U: refresh(target)
     U-->>UI: Clear warning only after successful current information
+    UI-->>Employee: Current queue and refresh time, warning cleared
+    end
+    end
     end
     end
     opt Employee signs out
+    Employee->>UI: Sign out
+    UI->>UI: signOut()
     UI->>A: signOut(context)
     A->>Access: signOut(context)
     Access->>I: revokeAccess(context)
-    UI->>U: stop(protected targets)
+    Access-->>A: Signed out
+    alt Sign-out confirmed
+    A-->>UI: Actual sign-out outcome
+    UI->>U: stop(target)
+    UI-->>Employee: Signed out, no order data
+    else No response before timeout
+    UI-->>Employee: Sign-out not confirmed, try again
+    end
     end

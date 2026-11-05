@@ -9,6 +9,10 @@ sequenceDiagram
     participant L as OrderLifecycle
     participant O as OrderStore
     Employee->>UI: Choose permitted next action
+    Note over UI: observedRevision is fixed here, at the detail the employee was shown, and is the revision sent below. Refreshes do not move it. Once the action is dismissed or its outcome is known it advances to the newest detail received.
+    break Last refresh failed, stale warning showing
+    UI-->>Employee: May be out of date, refresh before choosing, no request sent, typed reason kept
+    end
     opt Cancellation chosen
     UI-->>Employee: Request reason and final confirmation, reason customer-visible
     Employee->>UI: Enter reason and confirm or dismiss
@@ -16,11 +20,13 @@ sequenceDiagram
     alt Cancellation dismissed
     UI-->>Employee: No request, no change, retain reason in current view
     else Action explicitly submitted
-    UI->>C: changeStatus(context, number, observedRevision, target, reason)
+    UI->>UI: requestChange(target, reason)
+    UI->>C: changeStatus(context, number, revision, target, reason)
     C->>Access: requireStaff(context)
     alt Access denied
     Access-->>C: Denial
     C-->>UI: No change, access guidance
+    UI-->>Employee: No change, sign-in required or access denied, typed reason kept
     else Authorized
     Access-->>C: Employee
     C->>S: changeStatus(number, revision, target, reason, employee)
@@ -33,8 +39,8 @@ sequenceDiagram
     alt Requested revision already stale
     S-->>C: Conflict with current detail, no change
     else Revision matches current read
-    S->>L: validateChange(currentStatus, target, reason)
-    alt Invalid action or blank cancellation reason
+    S->>L: validateChange(status, target, reason)
+    alt Invalid action or blank or whitespace-only cancellation reason
     L-->>S: Correction
     S-->>C: Rejected, no change
     else Valid proposed action
@@ -52,11 +58,14 @@ sequenceDiagram
     end
     end
     C-->>UI: Actual outcome
+    opt Conflict
+    UI->>UI: showConflict(currentOrder)
+    end
     UI-->>Employee: Accepted result, correction or explicit conflict review
     end
     end
-    opt Write outcome uncertain
-    UI->>C: getDetail(context, number) through authorized read
-    C-->>UI: Actual current state/history or unavailable
-    UI-->>Employee: Review before any new deliberate action, no automatic write retry
+    opt Write outcome uncertain, or no response before timeout
+    UI->>C: getDetail(context, number)
+    C-->>UI: Actual current state/history or unavailable, through authorized read
+    UI-->>Employee: Review before any new deliberate action, no automatic write retry, typed reason kept
     end

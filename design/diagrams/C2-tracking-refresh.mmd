@@ -8,28 +8,36 @@ sequenceDiagram
     participant S as TrackingService
     participant O as OrderStore
     Customer->>UI: Leave private tracking page open
-    UI->>U: observe(private tracking target, view)
-    loop Automatic current-information checks while page open
+    UI->>U: observe(target, view)
+    loop Automatic refresh while page open
+    U->>U: refresh(target)
+    alt Connection and service available
     U->>C: getSummary(privateLink)
     C->>S: getSnapshot(privateLink)
     S->>O: findByPrivateLink(privateLink)
     O-->>S: Associated current order or unavailable
-    S-->>C: Safe snapshot or unavailable
+    S-->>C: Safe snapshot with its status-specific guidance, or unavailable
     alt Successful current snapshot
     C-->>U: Current information
     U-->>UI: Render current status, update successful time, clear warning
+    UI->>UI: showSummary(snapshot)
+    UI->>UI: showInstructions(snapshot)
+    UI-->>Customer: Current status, its next step and last successful check
     else Invalid link
     C-->>U: Link unavailable without order data
     U-->>UI: Show unavailable-link state, no invented status
+    UI->>UI: showUnavailable()
+    UI-->>Customer: We couldn't open this tracking link, check the full saved link, no order details
     end
-    end
-    opt Connection or service failure
+    else No response before timeout, or connection or service failure
     U-->>UI: Keep last information/time and mark stale
     UI-->>Customer: Status may be outdated, no fabricated first-load result
-    end
     opt Connectivity returns
-    UI->>U: recover(private tracking target)
-    U->>U: refresh(target) through the same private read
+    UI->>U: recover(target)
+    U->>U: refresh(target)
     U-->>UI: Clear warning only after successful current information
+    UI-->>Customer: Current status, its next step and last successful check, warning cleared
     end
-    Note over UI,U: Transport and scheduling are implementation choices. Meet specified freshness targets where measured, without erasing active user input.
+    end
+    end
+    Note over UI,U: Choose the update transport and verify freshness end to end without erasing active input.

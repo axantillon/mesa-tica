@@ -20,7 +20,7 @@ Cart rows show item, price, quantity, subtotal and explicit Remove. Display the 
 
 ## Confirmation and tracking - Helen
 
-Confirmation prominently communicates “Order received,” order number, accepted items/total, payment at collection and an action to view progress. “Copy tracking link” provides “Link copied” feedback; on failure expose a selectable link and manual copy guidance. Include “Save this link or bookmark the tracking page so you can check your order later. Anyone with this link can view this order.” Explain that changes/cancellation are handled by restaurant staff, not through customer controls.
+Confirmation prominently communicates “Order received,” order number, accepted items/total, payment at collection and an action to view progress. Show the current status on recovery and omit payment instructions for Cancelled or Collected orders. “Copy tracking link” provides “Link copied” feedback; on failure expose a selectable link and manual copy guidance. Include “Save this link or bookmark the tracking page so you can check your order later. Anyone with this link can view this order.” Explain that changes/cancellation are handled by restaurant staff, not through customer controls.
 
 Tracking is readable directly from the saved link. It shows the current state in words, order number and accepted contents/total, plus the last successful check. It does not require an app download, account, notification permission or manual refreshing to receive normal updates.
 
@@ -44,7 +44,7 @@ Filters are Active, Received, Preparing, Ready, Collected, Cancelled, All. New m
 
 Only offer the permitted lifecycle actions, with explicit labels “Mark Preparing,” “Mark Ready,” “Mark Collected,” and “Cancel order.” Cancellation gathers a reason and final confirmation: “Cancel order [number]? The customer will see this reason.” Do not display success until acceptance is known. A conflict says the order changed, shows its current state and asks the employee to review before choosing another valid action. No silent retry.
 
-A stale/uncertain view warns that information may be out of date. If an attempted write's result is unknown, refresh actual state/history before offering another deliberate change. Preserve entered cancellation text during recovery where possible. Session expiry asks staff to sign in; a failed sign-in says “We couldn't sign you in. Check your credentials and try again.” Denied users see no operational order data.
+A stale/uncertain view warns that information may be out of date. If an attempted write's result is unknown, refresh actual state/history before offering another deliberate change. Preserve entered cancellation text during recovery where possible. Session expiry asks staff to sign in; a failed sign-in says “We couldn't sign you in. Check your credentials and try again.” Distinguish a connection or service failure from rejected credentials. Denied users see no operational order data.
 
 ## Accessibility and communication
 
