@@ -2,11 +2,17 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { dataDirectory, openDatabase, readMenu, readRestaurant } from './store.js';
+import { HttpError, readJson } from './http.js';
+import { acceptOrder, recoverOrder, trackOrder } from './orders.js';
 import { openingState } from './opening.js';
 
 const assets = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
+  ['/track', ['tracking.html', 'text/html; charset=utf-8']],
+  ['/tracking.js', ['tracking.js', 'text/javascript; charset=utf-8']],
+  ['/updates.js', ['updates.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
+  ['/common.js', ['common.js', 'text/javascript; charset=utf-8']],
   ['/menu.js', ['menu.js', 'text/javascript; charset=utf-8']],
 ]);
 
@@ -23,7 +29,7 @@ export function application({ directory = dataDirectory(), now = () => new Date(
     db.close();
     throw new Error('Database setup is required. Run npm run setup.', { cause: error });
   }
-  const server = createServer((req, res) => {
+  const server = createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -35,14 +41,23 @@ export function application({ directory = dataDirectory(), now = () => new Date(
         const restaurant = readRestaurant(db);
         return json(res, 200, { restaurant, opening: openingState(restaurant, now()), menu: readMenu(db) });
       }
-      if (req.method === 'GET' && assets.has(pathname)) {
-        const [file, type] = assets.get(pathname);
+      if (req.method === 'POST' && ['/api/checkout/submit', '/api/checkout/check'].includes(pathname)) {
+        const body = await readJson(req);
+        return json(res, 200, pathname.endsWith('/submit') ? acceptOrder(db, body, now) : recoverOrder(db, body));
+      }
+      if (req.method === 'GET' && (pathname === '/api/track' || pathname.startsWith('/api/track/'))) {
+        return json(res, 200, trackOrder(db, pathname.slice('/api/track/'.length)));
+      }
+      const asset = assets.get(pathname.startsWith('/track/') ? '/track' : pathname);
+      if (req.method === 'GET' && asset) {
+        const [file, type] = asset;
         const body = readFileSync(new URL('../public/' + file, import.meta.url));
         res.writeHead(200, { 'Content-Type': type });
         return res.end(body);
       }
       return json(res, 404, { error: 'not_found' });
-    } catch {
+    } catch (error) {
+      if (error instanceof HttpError) return json(res, error.status, { error: error.message });
       return json(res, 503, { error: 'service_unavailable' });
     }
   });
