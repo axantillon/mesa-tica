@@ -1,6 +1,6 @@
 // A · MenuPage: the menu (A1), the cart (A2) and Place order with Copy link (A3).
 import { Cart, MAX_QUANTITY } from './Cart.js';
-import { money, dateTime, h, api } from '../shared/ui.js';
+import { money, dateTime, h, fill, api } from '../shared/ui.js';
 
 const REFUSALS = {
   empty: 'Your cart is empty. Add a dish first.',
@@ -55,7 +55,7 @@ class MenuPage {
   }
 
   renderDishes() {
-    document.getElementById('dishes').replaceChildren(
+    fill(document.getElementById('dishes'),
       ...this.dishes.map((d) =>
         h('li', { class: d.available ? 'dish' : 'dish unavailable' },
           h('div', {}, h('h3', {}, d.name), h('p', {}, d.description), !d.available && h('p', { class: 'tag' }, 'Not available today')),
@@ -72,7 +72,7 @@ class MenuPage {
     const items = this.cart.items;
     const pending = Boolean(this.cart.submissionId);
     const canPlace = items.length > 0 && !this.sending && (this.open || (pending && !this.answered));
-    document.getElementById('cart-body').replaceChildren(
+    fill(document.getElementById('cart-body'),
       items.length === 0
         ? h('p', { class: 'muted' }, 'Your cart is empty.')
         : h('ul', { class: 'lines' },
@@ -174,8 +174,8 @@ class MenuPage {
       }
     };
     const el = document.getElementById('confirmation');
-    el.replaceChildren(
-      h('h2', {}, `Order #${order.number} received`),
+    fill(el,
+      h('h2', {}, `Order #${order.number}`), // a retry may return an order whose status has moved on
       h('p', {}, 'Status: ', h('strong', {}, order.status), ` · sent ${dateTime(order.submittedAt)}`),
       h('ul', { class: 'lines' }, order.lines.map((l) => h('li', {}, `${l.quantity} × ${l.dishName}`, h('span', { class: 'line-total' }, money(l.price * l.quantity))))),
       h('p', { class: 'total' }, 'Total ', h('strong', {}, money(order.total)), ' · pay at collection'),

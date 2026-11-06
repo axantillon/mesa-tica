@@ -1,6 +1,6 @@
 // B · StaffPage: sign in and the live queue (B1), one order (B2), status changes with conflict handling (B3).
 import { Poller, finalError } from '../shared/Poller.js';
-import { money, clockTime, dateTime, h, api } from '../shared/ui.js';
+import { money, clockTime, dateTime, h, fill, api } from '../shared/ui.js';
 
 const STATUSES = ['Received', 'Preparing', 'Ready', 'Collected', 'Cancelled'];
 const NEXT = { Received: 'Preparing', Preparing: 'Ready', Ready: 'Collected' };
@@ -93,7 +93,7 @@ class StaffPage {
     if (!p.data) return;
 
     const orders = p.data;
-    $('queue').replaceChildren(
+    fill($('queue'),
       ...(orders.length === 0
         ? [h('li', { class: 'muted' }, 'No orders with these statuses.')]
         : orders.map((o) =>
@@ -133,7 +133,7 @@ class StaffPage {
   renderDetail() {
     const o = this.detail;
     const message = this.detailMessage && h('p', { class: this.detailMessage.kind, role: 'alert' }, this.detailMessage.text);
-    if (!o) return $('detail').replaceChildren(h('p', { class: 'muted' }, 'Open an order to see its items and change its status.'), message);
+    if (!o) return fill($('detail'), h('p', { class: 'muted' }, 'Open an order to see its items and change its status.'), message);
     const next = NEXT[o.status];
     this.noticeEl = h('p', { class: 'warn', hidden: !this.detailChanged },
       'This order changed since you opened it. ',
@@ -142,7 +142,7 @@ class StaffPage {
       name: 'reason', maxlength: 500, value: this.reasonDraft, placeholder: 'Reason the customer will see', 'aria-label': 'Cancellation reason',
       oninput: (e) => (this.reasonDraft = e.target.value),
     });
-    $('detail').replaceChildren(
+    fill($('detail'),
       h('h2', {}, `Order #${o.number}`),
       h('p', {}, 'Status: ', h('strong', { class: `status s-${o.status}` }, o.status), h('span', { class: 'muted' }, ` · version ${o.version}`)),
       h('p', { class: 'muted' }, `Submitted ${dateTime(o.submittedAt)}`),

@@ -16,7 +16,12 @@ export function h(tag, attrs = {}, ...children) {
     else if (v === true) el.setAttribute(k, '');
     else if (v !== false && v != null) el.setAttribute(k, v);
   }
-  el.append(...children.flat().filter((c) => c != null && c !== false));
+  return fill(el, ...children);
+}
+
+// Replaces el's children. null, undefined and false are skipped (replaceChildren would print them as text).
+export function fill(el, ...children) {
+  el.replaceChildren(...children.flat().filter((c) => c != null && c !== false));
   return el;
 }
 

@@ -1,6 +1,6 @@
 // C · TrackingPage: the order from its private link (C1), live status (C2), what to do when Ready or Cancelled (C3).
 import { Poller, finalError } from '../shared/Poller.js';
-import { money, clockTime, dateTime, h, api } from '../shared/ui.js';
+import { money, clockTime, dateTime, h, fill, api } from '../shared/ui.js';
 
 const EXPLAIN = {
   Received: 'The restaurant has your order. The kitchen will start on it soon. Not ready yet.',
@@ -18,7 +18,7 @@ let shown = '';
 let warned = false;
 
 function renderOrder(o) {
-  view.replaceChildren(
+  fill(view,
     h('h2', {}, `Order #${o.number}`),
     h('p', { class: `status-big s-${o.status}` }, o.status),
     h('p', {}, EXPLAIN[o.status]),
@@ -38,7 +38,7 @@ function renderOrder(o) {
 function render(p) {
   if (p.stopReason?.status === 404) {
     check.hidden = true;
-    view.replaceChildren(h('h2', {}, 'Link not valid'), h('p', {}, 'No order matches this link. Check that you copied the whole link.'));
+    fill(view, h('h2', {}, 'Link not valid'), h('p', {}, 'No order matches this link. Check that you copied the whole link.'));
     return;
   }
   const o = p.data;

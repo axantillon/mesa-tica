@@ -36,7 +36,7 @@ p { margin: 0.4rem 0; }
 .warn { background: var(--warn-bg); color: var(--warn-ink); }
 .error { background: var(--error-bg); color: var(--error-ink); }
 p.ok, p.warn, p.error { padding: 0.5rem 0.7rem; border-radius: 6px; }
-p.ok:empty { display: none; }
+p.ok:empty, p.warn:empty, p.error:empty { display: none; }
 .muted { color: var(--muted); }
 .tip { font-size: 0.95rem; color: var(--muted); }
 .tag { display: inline-block; font-size: 0.85rem; color: var(--error-ink); }
