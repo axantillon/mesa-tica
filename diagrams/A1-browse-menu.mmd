@@ -1,0 +1,22 @@
+%%{init: {"fontFamily": "arial", "sequence": {"actorMargin": 50, "messageMargin": 40, "noteMargin": 12, "boxMargin": 10, "labelBoxWidth": 75, "mirrorActors": false, "showSequenceNumbers": false, "actorFontFamily": "arial", "noteFontFamily": "arial", "messageFontFamily": "arial", "actorFontSize": 18, "messageFontSize": 18, "noteFontSize": 17}, "themeCSS": ".messageText,.loopText,.loopText tspan,.sectionTitle,.sectionTitle tspan{stroke:#fff;stroke-width:10px;stroke-linejoin:round;paint-order:stroke}"}}%%
+sequenceDiagram
+    actor Maya
+    participant MP as MenuPage
+    participant OC as OrderingController
+    participant RS as RestaurantStore
+
+    Maya->>MP: Open the menu
+    MP->>OC: getMenu()
+    OC->>RS: readMenu()
+    RS-->>OC: every dish
+    OC->>RS: readRestaurant()
+    RS-->>OC: weekly hours, time zone
+    OC->>OC: openStatus(now)
+    Note right of RS: Open from opening time<br/>(inclusive) to closing<br/>time (exclusive), server<br/>clock, restaurant time zone.
+    OC-->>MP: dishes, open, nextOpening
+    MP-->>Maya: Dishes, Add off if unavailable
+    alt Open now
+        MP-->>Maya: Place order is on
+    else Closed
+        MP-->>Maya: Next opening time, Place order off
+    end

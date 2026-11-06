@@ -1,0 +1,26 @@
+%%{init: {"fontFamily": "arial", "flowchart": {"wrappingWidth": 400}}}%%
+flowchart TB
+    Maya(["Maya: customer, orders as a guest"])
+    Helen(["Helen: customer with a saved tracking link"])
+    Setup(["Restaurant setup, supplied before use:<br/>menu, opening hours, staff accounts"])
+    Luis(["Luis: restaurant staff"])
+
+    subgraph MT["Mesa Tica: pickup only"]
+        A["A · Customer ordering<br/>browse menu, edit cart, place order<br/>stories A1-A3"]
+        D[("Shared data<br/>restaurant, menu, orders, status history")]
+        C["C · Order tracking<br/>open private link, follow status, ready or cancelled<br/>stories C1-C3"]
+        B["B · Restaurant order queue<br/>sign in, see queue, inspect, update status<br/>stories B1-B3"]
+    end
+
+    OUT["Outside the system in this release:<br/>online payment (the customer pays at collection)<br/>screens to edit the menu, hours or staff accounts<br/>app install and push notifications<br/>owner reporting and billing"]
+
+    Maya --> A
+    Helen --> C
+    Setup --> D
+    Luis --> B
+    A -->|"accepted order"| D
+    A -.->|"private tracking link"| C
+    D -->|"current status"| C
+    D -->|"new orders"| B
+    B -->|"status and cancel reason"| D
+    MT ~~~ OUT

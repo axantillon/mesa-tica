@@ -1,0 +1,25 @@
+%%{init: {"fontFamily": "arial", "sequence": {"actorMargin": 50, "messageMargin": 40, "noteMargin": 12, "boxMargin": 10, "labelBoxWidth": 75, "mirrorActors": false, "showSequenceNumbers": false, "actorFontFamily": "arial", "noteFontFamily": "arial", "messageFontFamily": "arial", "actorFontSize": 18, "messageFontSize": 18, "noteFontSize": 17}, "themeCSS": ".messageText,.loopText,.loopText tspan,.sectionTitle,.sectionTitle tspan{stroke:#fff;stroke-width:10px;stroke-linejoin:round;paint-order:stroke}"}}%%
+sequenceDiagram
+    actor Luis
+    participant SP as StaffPage
+    participant SC as StaffController
+    participant OS as OrderStore
+    participant SS as StaffStore
+
+    Luis->>SP: Next status, or Cancel + reason
+    SP->>SC: changeStatus(number, version, to, reason)
+    SC->>SS: findSession(sessionId)
+    SS-->>SC: employee
+    critical One transaction
+        SC->>OS: getOrder(number)
+        alt Same version Luis saw
+            OS-->>SC: status, same version
+            SC->>SC: canChange(from, to, reason)
+            SC->>OS: saveStatus(number, to, reason, employee)
+        else Changed by someone else
+            OS-->>SC: status, newer version
+        end
+    end
+    SC-->>SP: updated order, or 409 + current order
+    SP-->>Luis: New status, or the conflict and why
+    Note right of SS: One 409, nothing<br/>resent. If still valid,<br/>Luis chooses again<br/>on the new version.

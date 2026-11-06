@@ -1,0 +1,26 @@
+%%{init: {"fontFamily": "arial", "sequence": {"actorMargin": 50, "messageMargin": 40, "noteMargin": 12, "boxMargin": 10, "labelBoxWidth": 75, "mirrorActors": false, "showSequenceNumbers": false, "actorFontFamily": "arial", "noteFontFamily": "arial", "messageFontFamily": "arial", "actorFontSize": 18, "messageFontSize": 18, "noteFontSize": 17}, "themeCSS": ".messageText,.loopText,.loopText tspan,.sectionTitle,.sectionTitle tspan{stroke:#fff;stroke-width:10px;stroke-linejoin:round;paint-order:stroke}"}}%%
+sequenceDiagram
+    actor Maya
+    participant MP as MenuPage
+    participant Cart
+    participant OC as OrderingController
+    participant OS as OrderStore
+
+    Maya->>MP: Place order
+    MP->>Cart: getSubmission()
+    MP->>OC: placeOrder(submissionId, items)
+    critical One transaction
+        OC->>OS: findBySubmission(submissionId)
+        alt Found: a retry
+            OS-->>OC: the same order
+        else New submissionId
+            OC->>OC: validate(items, now)
+            OC->>OS: createOrder(submissionId, items)
+        end
+    end
+    Note right of OS: Refused (422): no order, a reason,<br/>cart kept, updatePrices(menu).<br/>No answer: Place order resends<br/>the same submissionId, even<br/>after closing.
+    OC-->>MP: number, tracking link, Received
+    MP->>Cart: clear()
+    MP-->>Maya: Number, tracking link, Copy link
+    Maya->>MP: Copy link
+    MP-->>Maya: Copied, or a selectable link

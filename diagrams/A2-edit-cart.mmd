@@ -1,0 +1,22 @@
+%%{init: {"fontFamily": "arial", "sequence": {"actorMargin": 50, "messageMargin": 40, "noteMargin": 12, "boxMargin": 10, "labelBoxWidth": 75, "mirrorActors": false, "showSequenceNumbers": false, "actorFontFamily": "arial", "noteFontFamily": "arial", "messageFontFamily": "arial", "actorFontSize": 18, "messageFontSize": 18, "noteFontSize": 17}, "themeCSS": ".messageText,.loopText,.loopText tspan,.sectionTitle,.sectionTitle tspan{stroke:#fff;stroke-width:10px;stroke-linejoin:round;paint-order:stroke}"}}%%
+sequenceDiagram
+    actor Maya
+    participant MP as MenuPage
+    participant Cart
+
+    Maya->>MP: Add a dish
+    MP->>Cart: add(dish)
+    Maya->>MP: Type a new quantity
+    MP->>Cart: setQuantity(dishCode, quantity)
+    alt Whole number ≥ 1
+        Cart-->>MP: saved
+    else Invalid
+        Cart-->>MP: refused: 0, -1, 1.5 or text
+        MP-->>Maya: Correction message
+    end
+    Maya->>MP: Remove an item
+    MP->>Cart: remove(dishCode)
+    MP->>Cart: total()
+    Cart-->>MP: new total
+    MP-->>Maya: Items, quantities, total
+    Note right of Cart: Kept in localStorage.<br/>total() runs after<br/>every change.

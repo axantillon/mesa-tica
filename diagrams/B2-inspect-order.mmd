@@ -1,0 +1,17 @@
+%%{init: {"fontFamily": "arial", "sequence": {"actorMargin": 50, "messageMargin": 40, "noteMargin": 12, "boxMargin": 10, "labelBoxWidth": 75, "mirrorActors": false, "showSequenceNumbers": false, "actorFontFamily": "arial", "noteFontFamily": "arial", "messageFontFamily": "arial", "actorFontSize": 18, "messageFontSize": 18, "noteFontSize": 17}, "themeCSS": ".messageText,.loopText,.loopText tspan,.sectionTitle,.sectionTitle tspan{stroke:#fff;stroke-width:10px;stroke-linejoin:round;paint-order:stroke}"}}%%
+sequenceDiagram
+    actor Luis
+    participant SP as StaffPage
+    participant SC as StaffController
+    participant OS as OrderStore
+    participant SS as StaffStore
+
+    Luis->>SP: Open an order
+    SP->>SC: getOrder(number)
+    SC->>SS: findSession(sessionId)
+    SS-->>SC: employee
+    SC->>OS: getOrder(number)
+    OS-->>SC: order and its lines
+    Note right of SS: Names and prices come<br/>from the OrderLine rows<br/>saved at acceptance,<br/>never from today's menu.
+    SC-->>SP: order details
+    SP-->>Luis: Number, items, quantities, time

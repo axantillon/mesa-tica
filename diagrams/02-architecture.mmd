@@ -1,0 +1,28 @@
+%%{init: {"fontFamily": "arial", "flowchart": {"nodeSpacing": 50, "rankSpacing": 55, "wrappingWidth": 400}}}%%
+flowchart TB
+    subgraph BR["Browser on phone, tablet or PC"]
+        SP["B · Staff page<br/>/staff"]
+        TP["C · Tracking page<br/>/track/{token}"]
+        MP["A · Menu page<br/>/ with the Cart"]
+    end
+
+    subgraph SRV["Node 24 server on Railway"]
+        SC["B · StaffController<br/>status-order rule"]
+        TC["C · TrackingController"]
+        OC["A · OrderingController<br/>opening-hours rule"]
+        DL["Data layer<br/>RestaurantStore<br/>OrderStore<br/>StaffStore"]
+        SETUP["Setup script<br/>npm run setup"]
+    end
+
+    DB[("SQLite file mesa.sqlite<br/>on the Railway volume")]
+
+    SP -->|"JSON, every 2 s"| SC
+    TP -->|"JSON, every 2 s"| TC
+    MP -->|JSON| OC
+    SC --> DL
+    TC --> DL
+    OC --> DL
+    DL --> DB
+    SETUP -->|fills once| DB
+    MP ~~~ SETUP
+

@@ -1,0 +1,122 @@
+%%{init: {"fontFamily": "arial"}}%%
+classDiagram
+    direction TB
+
+    namespace A_Ordering {
+        class MenuPage {
+            <<page>>
+        }
+        class Cart {
+            <<localStorage>>
+            +add(dish)
+            +setQuantity(dishCode, quantity)
+            +remove(dishCode)
+            +total()
+            +getSubmission()
+            +updatePrices(menu)
+            +clear()
+        }
+        class OrderingController {
+            <<controller>>
+            +getMenu()
+            +openStatus(now)
+            +placeOrder(submissionId, items)
+            +validate(items, now)
+        }
+    }
+
+    namespace C_Tracking {
+        class TrackingPage {
+            <<page>>
+        }
+        class TrackingController {
+            <<controller>>
+            +getTracking(token)
+        }
+    }
+
+    namespace B_StaffQueue {
+        class StaffPage {
+            <<page>>
+        }
+        class StaffController {
+            <<controller>>
+            +signIn(username, password)
+            +listOrders(statusFilter)
+            +getOrder(number)
+            +changeStatus(number, version, to, reason)
+            +canChange(from, to, reason)
+        }
+    }
+
+    class RestaurantStore {
+        <<handler>>
+        +readMenu()
+        +readRestaurant()
+    }
+    class OrderStore {
+        <<handler>>
+        +transaction(work)
+        +findBySubmission(submissionId)
+        +createOrder(submissionId, items)
+        +listOrders(statusFilter)
+        +getOrder(number)
+        +saveStatus(number, to, reason, employee)
+        +findByToken(token)
+    }
+    class StaffStore {
+        <<handler>>
+        +findEmployee(username)
+        +createSession(employeeId)
+        +findSession(sessionId)
+    }
+
+    namespace SavedData {
+        class Dish {
+            <<entity>>
+            +String code
+            +String name
+            +String description
+            +Integer price
+            +Boolean available
+        }
+        class Order {
+            <<entity>>
+            +Integer number
+            +String submissionId
+            +String trackingToken
+            +DateTime submittedAt
+            +String status
+            +Integer version
+            +Integer total
+            +String cancellationReason
+        }
+        class OrderLine {
+            <<entity>>
+            +String dishName
+            +Integer price
+            +Integer quantity
+        }
+        class StatusChange {
+            <<entity>>
+            +String fromStatus
+            +String toStatus
+            +String employeeId
+            +DateTime changedAt
+            +String reason
+        }
+    }
+
+    MenuPage --> Cart : keeps
+    MenuPage ..> OrderingController : JSON
+    StaffPage ..> StaffController : JSON
+    TrackingPage ..> TrackingController : JSON
+    OrderingController --> RestaurantStore
+    OrderingController --> OrderStore
+    StaffController --> OrderStore
+    StaffController --> StaffStore
+    TrackingController --> OrderStore
+    RestaurantStore ..> Dish : reads
+    OrderStore ..> Order : saves
+    Order "1" *-- "1..*" OrderLine
+    Order "1" *-- "0..*" StatusChange

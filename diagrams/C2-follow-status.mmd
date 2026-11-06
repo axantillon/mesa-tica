@@ -1,0 +1,20 @@
+%%{init: {"fontFamily": "arial", "sequence": {"actorMargin": 50, "messageMargin": 40, "noteMargin": 12, "boxMargin": 10, "labelBoxWidth": 75, "mirrorActors": false, "showSequenceNumbers": false, "actorFontFamily": "arial", "noteFontFamily": "arial", "messageFontFamily": "arial", "actorFontSize": 18, "messageFontSize": 18, "noteFontSize": 17}, "themeCSS": ".messageText,.loopText,.loopText tspan,.sectionTitle,.sectionTitle tspan{stroke:#fff;stroke-width:10px;stroke-linejoin:round;paint-order:stroke}"}}%%
+sequenceDiagram
+    actor Helen
+    participant TP as TrackingPage
+    participant TC as TrackingController
+    participant OS as OrderStore
+
+    Helen->>TP: Keep the page open
+    loop Every 2 s
+        TP->>TC: getTracking(token)
+        alt Answer arrives
+            TC->>OS: findByToken(token)
+            OS-->>TC: the order
+            TC-->>TP: current status
+            TP-->>Helen: Status, last check time
+        else Offline
+            TP-->>Helen: Updates unavailable warning
+        end
+    end
+    Note right of OS: After reconnection, the<br/>first successful check<br/>shows the status, and<br/>only then clears the<br/>warning.

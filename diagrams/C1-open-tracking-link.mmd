@@ -1,0 +1,20 @@
+%%{init: {"fontFamily": "arial", "sequence": {"actorMargin": 50, "messageMargin": 40, "noteMargin": 12, "boxMargin": 10, "labelBoxWidth": 75, "mirrorActors": false, "showSequenceNumbers": false, "actorFontFamily": "arial", "noteFontFamily": "arial", "messageFontFamily": "arial", "actorFontSize": 18, "messageFontSize": 18, "noteFontSize": 17}, "themeCSS": ".messageText,.loopText,.loopText tspan,.sectionTitle,.sectionTitle tspan{stroke:#fff;stroke-width:10px;stroke-linejoin:round;paint-order:stroke}"}}%%
+sequenceDiagram
+    actor Helen
+    participant TP as TrackingPage
+    participant TC as TrackingController
+    participant OS as OrderStore
+
+    Helen->>TP: Open the saved link
+    TP->>TC: getTracking(token)
+    TC->>OS: findByToken(token)
+    Note right of OS: The random token<br/>(128+ bits) is the<br/>only key. No login,<br/>no app.
+    alt Token found
+        OS-->>TC: that order only
+        TC-->>TP: number, items, status
+        TP-->>Helen: Order number and items
+    else No such token
+        OS-->>TC: nothing
+        TC-->>TP: 404, no order data
+        TP-->>Helen: Link not valid
+    end

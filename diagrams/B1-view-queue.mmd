@@ -1,0 +1,26 @@
+%%{init: {"fontFamily": "arial", "sequence": {"actorMargin": 50, "messageMargin": 40, "noteMargin": 12, "boxMargin": 10, "labelBoxWidth": 75, "mirrorActors": false, "showSequenceNumbers": false, "actorFontFamily": "arial", "noteFontFamily": "arial", "messageFontFamily": "arial", "actorFontSize": 18, "messageFontSize": 18, "noteFontSize": 17}, "themeCSS": ".messageText,.loopText,.loopText tspan,.sectionTitle,.sectionTitle tspan{stroke:#fff;stroke-width:10px;stroke-linejoin:round;paint-order:stroke}"}}%%
+sequenceDiagram
+    actor Luis
+    participant SP as StaffPage
+    participant SC as StaffController
+    participant OS as OrderStore
+    participant SS as StaffStore
+
+    Luis->>SP: Sign in
+    SP->>SC: signIn(username, password)
+    SC->>SS: findEmployee(username)
+    SC->>SS: createSession(employeeId)
+    SC-->>SP: session cookie
+    loop Every 2 s
+        SP->>SC: listOrders(statusFilter)
+        alt Answer arrives
+            SC->>SS: findSession(sessionId)
+            Note right of SS: Every staff call runs findSession<br/>first. No valid session: 401,<br/>no order data.
+            SC->>OS: listOrders(statusFilter)
+            OS-->>SC: orders, oldest first
+            SC-->>SP: orders
+            SP-->>Luis: Queue, last refresh time
+        else Offline
+            SP-->>Luis: Last queue, stale-data warning
+        end
+    end
