@@ -33,3 +33,5 @@ Run with Node.js 24 or newer: `npm run setup`, `npm start`, then visit http://lo
 Assumptions: quantities are capped at 999 per line, sign-in sessions last eight hours, and three-second polling is adequate for a local demonstration. The local process and SQLite are not a production deployment architecture. Before hosting, add TLS and secure cookies, configurable binding and proxy policy, durable backups and restore procedures, production credential management and shared rate limiting; validate operational and security requirements. No public deployment was performed.
 
 Milestones: `0d7d09b` setup foundation; `e065afb` customer ordering, tracking and staff workflows; subsequent documentation and verification fixes are recorded in Git history. Draft PR: https://github.com/axantillon/mesa-tica/pull/8.
+
+Playwright follow-up: invalid quantity edits are retained until corrected, closed notices include a dated next opening, and staff filter changes show loading while fetching the selected view. The opening-boundary regression uses an isolated injected clock; production uses real time.
