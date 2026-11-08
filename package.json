@@ -1,0 +1,13 @@
+{
+  "name": "mesa-tica",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pickup ordering for the fictional Mesa Tica restaurant.",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "setup": "node --disable-warning=ExperimentalWarning src/setup.js",
+    "start": "npm run --silent setup && node --disable-warning=ExperimentalWarning src/main.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.js"
+  }
+}
