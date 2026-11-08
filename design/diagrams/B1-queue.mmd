@@ -14,6 +14,11 @@ sequenceDiagram
     UI->>UI: signIn()
     UI->>A: signIn(credentials)
     A->>Access: signIn(credentials)
+    alt Excessive sign-in attempts temporarily limited
+    Access-->>A: Temporarily limited, generic retry guidance
+    A-->>UI: Sign-in temporarily unavailable, retry guidance
+    UI-->>Employee: Explain when or how to retry, no account existence or order data disclosed
+    else Sign-in attempt permitted
     Access->>I: authenticate(credentials)
     I-->>Access: Access context or generic failure
     Access-->>A: Sign-in outcome
@@ -68,7 +73,6 @@ sequenceDiagram
     end
     end
     end
-    end
     opt Employee signs out
     Employee->>UI: Sign out
     UI->>UI: signOut()
@@ -82,5 +86,7 @@ sequenceDiagram
     UI-->>Employee: Signed out, no order data
     else No response before timeout
     UI-->>Employee: Sign-out not confirmed, try again
+    end
+    end
     end
     end

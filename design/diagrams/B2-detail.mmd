@@ -34,6 +34,7 @@ sequenceDiagram
     U-->>UI: Newest response only, update successful check, clear stale warning, advance observedRevision unless an action is in progress
     UI->>UI: showDetail(order)
     UI-->>Employee: Accepted values, local time, history and actions, draft reason kept
+    Note over UI: Keep observedRevision for conflict handling and hide its internal value from staff.
     else Order not found
     O-->>S: Not found
     S-->>C: Unavailable order

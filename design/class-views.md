@@ -8,6 +8,7 @@ These four views partition the [complete detailed model](diagrams/06-detailed-de
 classDiagram
     direction TB
     class CustomerView {
+        <<boundary>>
         +Cart cart
         +SubmissionIdentity pendingAttempt
         +showMenu(menu)
@@ -22,6 +23,7 @@ classDiagram
         +copyTrackingLink()
     }
     class StaffView {
+        <<boundary>>
         +OrderFilter filter
         +Revision observedRevision
         +Text draftReason
@@ -33,12 +35,14 @@ classDiagram
         +signOut()
     }
     class TrackingView {
+        <<boundary>>
         +PrivateLink privateLink
         +showSummary(snapshot)
         +showInstructions(snapshot)
         +showUnavailable()
     }
     class UpdateCoordinator {
+        <<boundary>>
         +Instant lastSuccessfulCheck
         +Snapshot currentInformation
         +Boolean stale
@@ -48,21 +52,26 @@ classDiagram
         +stop(target)
     }
     class MenuController {
+        <<controller>>
         +getMenu(context)
     }
     class OrderController {
+        <<controller>>
         +submit(context, attempt, selection)
         +recover(context, attempt)
     }
     class StaffOrderController {
+        <<controller>>
         +listQueue(context, filter)
         +getDetail(context, number)
         +changeStatus(context, number, revision, target, reason)
     }
     class TrackingController {
+        <<controller>>
         +getSummary(privateLink)
     }
     class AuthController {
+        <<controller>>
         +signIn(credentials)
         +signOut(context)
     }
@@ -92,7 +101,7 @@ classDiagram
     TrackingController --> TrackingService
     CustomerView "1" --> "1" Cart
     CustomerView "1" --> "0..1" SubmissionIdentity : pending attempt
-    note for StaffView "observedRevision is the revision of the newest detail shown. It is fixed<br/>when an action is chosen, is the revision sent with that action, and<br/>advances to the newest detail received once the action is dismissed or its<br/>outcome is known. In requestChange and changeStatus, target is the<br/>requested status."
+    note for StaffView "Use the revision of the detail shown when the employee chooses an action.<br/>Keep it fixed during confirmation, then advance to the newest detail after<br/>dismissal or a known outcome."
     note for UpdateCoordinator "Ignore older responses. Preserve input and filter, record successful checks<br/>only and recover current information before clearing a stale warning.<br/>Timeouts are failures. Transport and scheduling are implementation choices.<br/>Never automatically repeat a rejected or uncertain staff write."
 ```
 
@@ -102,37 +111,45 @@ classDiagram
 classDiagram
     direction TB
     class MenuService {
+        <<service>>
         +getMenu(now)
     }
     class CheckoutService {
+        <<service>>
         +accept(context, attempt, selection)
         +recover(context, attempt)
         +validateSelection(selection, menu)
         +buildConfirmation(order)
     }
     class OrderService {
+        <<service>>
         +listQueue(filter)
         +getDetail(number)
         +changeStatus(number, revision, target, reason, employee)
     }
     class TrackingService {
+        <<service>>
         +getSnapshot(privateLink)
         +collectionGuidance(order, restaurant)
     }
     class AccessService {
+        <<service>>
         +signIn(credentials)
         +requireStaff(context)
         +signOut(context)
     }
     class OpeningPolicy {
+        <<policy>>
         +isOpen(restaurant, now)
         +nextOpening(restaurant, now)
     }
     class OrderLifecycle {
+        <<policy>>
         +allowedActions(status)
         +validateChange(status, target, reason)
     }
     class SetupRunner {
+        <<setup>>
         +runSetup()
     }
     class IdentityStore
@@ -154,8 +171,8 @@ classDiagram
     SetupRunner --> RestaurantStore
     SetupRunner --> MenuStore
     SetupRunner --> IdentityStore
-    note for CheckoutService "Early validation is for useful corrections, not final acceptance authority.<br/>resolveRejectedAttempt checks whether a racing identical attempt was<br/>accepted before presenting rejection. A proposal is the result of a valid<br/>validateSelection: accepted lines and total at current prices, a value and<br/>not a class, rechecked by acceptOnce. Proposals never authorize unreviewed<br/>price/item changes."
-    note for AccessService "All staff reads/writes require current authorized identity, including<br/>requests bypassing visible UI. In staff calls, context is the signed-in<br/>staff session. Identity and credential handling may use framework-native<br/>facilities."
+    note for CheckoutService "Validate the reviewed selection for useful corrections. The acceptance<br/>boundary rechecks current prices, availability and hours. Never authorize<br/>unreviewed changes."
+    note for AccessService "All staff reads/writes require current authorized identity, including<br/>requests bypassing visible UI. In staff calls, context is the signed-in<br/>staff session. Limit excessive sign-in attempts with generic retry guidance<br/>that does not reveal account existence. Keep routine ordering responsive<br/>during sign-in checks. Choose the protection and credential mechanisms<br/>during implementation."
     note for SetupRunner "Documented, noninteractive and safe to repeat. Loads the supplied<br/>restaurant and menu only if absent, never resets existing passwords and<br/>never deletes orders. The implementation chooses when and how setup runs."
 ```
 
@@ -165,14 +182,17 @@ classDiagram
 classDiagram
     direction TB
     class MenuStore {
+        <<handler>>
         +readCurrentMenu()
         +loadMenuIfAbsent(menu)
     }
     class RestaurantStore {
+        <<handler>>
         +readRestaurant()
         +loadRestaurantIfAbsent(restaurant)
     }
     class OrderStore {
+        <<handler>>
         +findAccepted(context, attempt)
         +acceptOnce(context, attempt, selection, proposal)
         +resolveRejectedAttempt(context, attempt)
@@ -183,6 +203,7 @@ classDiagram
         +changeIfCurrent(number, revision, target, reason, employee)
     }
     class IdentityStore {
+        <<handler>>
         +authenticate(credentials)
         +resolveAccess(context)
         +revokeAccess(context)
@@ -198,7 +219,7 @@ classDiagram
     OrderStore --> Order
     OrderStore --> SubmissionIdentity
     IdentityStore --> Employee
-    note for OrderStore "acceptOnce is one indivisible acceptance decision: same scoped attempt<br/>returns the same order identity/contents and current status before<br/>new-order checks, otherwise validates current hours/menu and records<br/>exactly one order with accepted lines. A definitive rejection creates no<br/>order and closes the attempt. A transient failure leaves the outcome<br/>unresolved. resolveRejectedAttempt is serialized with acceptOnce: it<br/>returns the accepted order or closes the attempt, and reports unresolved if<br/>it cannot be serialized. A closed attempt can never be accepted.<br/>issuePrivateLink runs once, only for a new order inside acceptOnce.<br/>changeIfCurrent checks observed revision, lifecycle and reason and records<br/>order plus employee/time history together. Mechanisms belong to<br/>implementation."
+    note for OrderStore "acceptOnce returns a prior acceptance before new-order checks, or<br/>rechecks current conditions and atomically records one order and its<br/>private link. A rejected attempt<br/>is closed only after resolving a competing acceptance. A transient failure<br/>stays unresolved. changeIfCurrent checks the revision and transition and<br/>saves status and employee/time history together. Mechanisms are chosen<br/>during implementation."
 ```
 
 ## Product entities and values
@@ -207,6 +228,7 @@ classDiagram
 classDiagram
     direction TB
     class Restaurant {
+        <<entity>>
         +Text name
         +TimeZone timezone
         +WeeklyHours openingHours
@@ -216,6 +238,7 @@ classDiagram
         +Currency currency
     }
     class MenuItem {
+        <<entity>>
         +ItemReference reference
         +Text name
         +Text description
@@ -225,6 +248,7 @@ classDiagram
         +Boolean available
     }
     class Cart {
+        <<entity>>
         +CartItemList items
         +add(item)
         +changeQuantity(item, quantity)
@@ -234,18 +258,21 @@ classDiagram
         +clearPurchased(selection)
     }
     class CartItem {
+        <<entity>>
         +ItemReference item
         +PositiveWholeNumber quantity
         +Text reviewedName
         +Money reviewedPrice
     }
     class SubmissionIdentity {
+        <<entity>>
         +AttemptReference reference
         +CustomerContext customerContext
         +CartItemList selection
         +AttemptOutcome outcome
     }
     class Order {
+        <<entity>>
         +OrderNumber number
         +Instant submittedAt
         +OrderStatus status
@@ -254,12 +281,14 @@ classDiagram
         +PrivateLink privateLink
     }
     class OrderedItem {
+        <<entity>>
         +Text acceptedName
         +PositiveWholeNumber quantity
         +Money acceptedPrice
         +Money subtotal
     }
     class StatusChange {
+        <<entity>>
         +OrderStatus fromStatus
         +OrderStatus toStatus
         +EmployeeReference employee
@@ -267,11 +296,13 @@ classDiagram
         +Text reason
     }
     class Employee {
+        <<entity>>
         +EmployeeReference reference
         +Text displayName
         +Boolean authorized
     }
     class Confirmation {
+        <<value>>
         +OrderedItemList acceptedItems
         +OrderNumber orderNumber
         +OrderStatus status
@@ -279,6 +310,7 @@ classDiagram
         +PrivateLink privateLink
     }
     class Money {
+        <<value>>
         +ExactAmount amount
         +Currency currency
     }
@@ -311,7 +343,7 @@ classDiagram
     Employee "1" --> "0..*" StatusChange
     SubmissionIdentity "1" --> "0..1" Order : accepted attempt
     Confirmation --> Order : summarizes
-    note for SubmissionIdentity "Logical identity of one customer's submission. reference, customerContext<br/>and selection are the attempt, context and selection values in A3 and A4<br/>calls. selection is the reviewed copy of the cart, fixed when the attempt<br/>begins. CustomerView retains it for same-browser recovery until the result<br/>is known, and OrderStore records it with an accepted attempt. outcome is<br/>pending, accepted or closed. A known rejection closes the attempt and a<br/>correction begins a new one. Absence of an accepted record alone is not<br/>proof that an in-flight attempt was rejected. No UUID, session/cookie<br/>scheme, storage representation or lifetime is prescribed. The same attempt<br/>cannot authorize a different selection or expose another customer's order."
+    note for SubmissionIdentity "One customer attempt is bound to its reviewed selection and retained for<br/>same-browser recovery. Its outcome is pending, accepted or closed. A<br/>known rejection closes it; correction starts a new attempt. An absent<br/>acceptance is not proof of rejection. Do not expose another order."
     note for Order "Accepted contents and totals are immutable. Revision is an opaque<br/>observed-state marker, not a prescribed database field type. OrderNumber is<br/>short and human-readable for pickup, and grants no online access.<br/>PrivateLink is random with at least 128 bits of entropy, issued once with<br/>the order and never regenerated on retry. It grants read access only to<br/>this order."
     note for Money "Exact monetary meaning, not a prescribed numeric storage representation.<br/>Other named types denote product values or collections, not extra mandatory<br/>runtime classes."
     note for OrderFilter "Active is the default: Received, Preparing and Ready. Each status filter<br/>shows that status. All shows every retained order."

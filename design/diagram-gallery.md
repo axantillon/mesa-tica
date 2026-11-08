@@ -13,9 +13,9 @@ flowchart LR
     Setup["Restaurant setup: menu, hours and staff access"]
     Physical["Cooking, handoff and payment outside the app"]
     subgraph Product["Mesa Tica pickup ordering"]
-        Ordering["Browse menu, edit cart, place order: A1-A5"]
-        Operations["See queue, inspect and update orders: B1-B3"]
-        Tracking["Open private link, check status and pickup: C1-C3"]
+        Ordering["A · Customer ordering<br/>Browse, edit cart and place order<br/>A1–A5"]
+        Operations["B · Restaurant operations<br/>Queue, order details and status changes<br/>B1–B3"]
+        Tracking["C · Customer tracking<br/>Private link, status and pickup guidance<br/>C1–C3"]
     end
     Customer --> Ordering
     Customer --> Tracking
@@ -144,37 +144,45 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph Browser["Browser frontend"]
-        Customer["CustomerView: menu, cart, confirmation"]
-        Staff["StaffView: sign-in, queue and detail"]
-        Tracking["TrackingView: private progress and instructions"]
-        Updates["UpdateCoordinator: current data, last success and recovery"]
+        Customer["A · CustomerView<br/>Menu, cart and confirmation"]
+        Staff["B · StaffView<br/>Sign-in, queue and detail"]
+        Tracking["C · TrackingView<br/>Private progress and guidance"]
+        Updates["UpdateCoordinator<br/>Current data, last success and recovery"]
         Staff --> Updates
         Tracking --> Updates
     end
     subgraph Backend["Web backend runtime"]
         Delivery["Page and asset delivery"]
-        Boundaries["MenuController / OrderController / StaffOrderController / TrackingController / AuthController"]
-        Access["AccessService: staff identity and authorization"]
-        Services["MenuService / CheckoutService / OrderService / TrackingService"]
-        Policies["OpeningPolicy / OrderLifecycle: business decisions"]
-        Stores["MenuStore / RestaurantStore / OrderStore / IdentityStore: persistence handlers"]
-        Delivery --> Boundaries
-        Boundaries --> Access
-        Boundaries --> Services
-        Services --> Policies
-        Services --> Stores
+        AControllers["A · MenuController / OrderController"]
+        BControllers["B · AuthController / StaffOrderController"]
+        CController["C · TrackingController"]
+        Access["AccessService<br/>Staff identity and authorization"]
+        AServices["A · MenuService / CheckoutService"]
+        BService["B · OrderService"]
+        CService["C · TrackingService"]
+        Policies["OpeningPolicy / OrderLifecycle<br/>Business decisions"]
+        Stores["Data layer · MenuStore / RestaurantStore<br/>OrderStore / IdentityStore"]
+        AControllers --> AServices
+        BControllers --> Access
+        BControllers --> BService
+        CController --> CService
+        AServices --> Policies
+        BService --> Policies
+        AServices --> Stores
+        BService --> Stores
+        CService --> Stores
         Access --> Stores
     end
-    Durable[("Durable data: restaurant/menu, accepted orders/lines, submissions, status history and staff access")]
-    Setup["SetupRunner: repeatable local setup and staff provisioning"]
-    Customer -->|"Browse and submit/recover order"| Delivery
-    Staff -->|"Sign in, inspect, change status"| Delivery
-    Tracking -->|"Open private link"| Delivery
-    Updates -->|"Read current authorized queue/detail or private snapshot"| Boundaries
+    Durable[("Durable data<br/>Restaurant and menu, accepted orders and lines,<br/>submissions, status history and staff access")]
+    Setup["SetupRunner<br/>Repeatable setup and staff provisioning"]
+    Browser -->|"Pages and assets"| Delivery
+    Customer -->|"Browse, submit and recover"| AControllers
+    Staff -->|"Sign in, inspect and change status"| BControllers
+    Tracking -->|"Open private link"| CController
+    Updates -->|"Current authorized queue or detail"| BControllers
+    Updates -->|"Current private snapshot"| CController
     Stores --> Durable
     Setup --> Stores
-    Decisions["Logical boundaries, not separately deployed microservices. Agent chooses framework, language, rendering, authentication mechanism, data technology, update transport and hosting. Acceptance and staff changes must preserve the specified indivisible consistency guarantees."]
-    Decisions -.-> Backend
 ```
 
 ## A1-menu
@@ -203,15 +211,19 @@ sequenceDiagram
     P-->>S: Opening state and next opening if any
     S-->>C: Menu presentation
     C-->>UI: Menu and opening information
-    UI-->>Customer: Browse all dishes and prices
+    UI-->>Customer: Browse grouped dishes and prices
     alt Dish available
     Customer->>UI: Add dish
-    UI->>UI: Add or increase quantity in cart
+    UI->>UI: Increase cart quantity
     else Dish unavailable
     UI-->>Customer: Explain unavailable, no addition
     end
     opt Restaurant closed
-    UI-->>Customer: Cart preparation allowed, submission disabled, next-opening guidance
+    alt Next opening known
+    UI-->>Customer: Cart editable, disabled button shows next local opening
+    else No upcoming opening
+    UI-->>Customer: Cart editable, ordering closed, show contact
+    end
     end
 ```
 
@@ -263,84 +275,56 @@ sequenceDiagram
     participant P as OpeningPolicy
     Customer->>UI: Place reviewed pickup order
     UI->>UI: reviewAndSubmit()
-    alt No pending attempt
+    alt New submission
     UI->>UI: beginAttempt()
-    Note over UI: Creates one attempt and fixes its selection as a copy of the reviewed cart.
-    else Pending attempt, result not yet known
-    UI->>UI: recoverPending()
-    Note over UI: Reuses the same attempt and its saved selection, never an edited cart. Repeated taps land here and can only resend this attempt. After a timeout the page offers Check order instead of Place, and Retry safely follows from A4.
-    end
     UI->>UI: savePending()
-    Note over UI: Save the attempt and selection for same-browser recovery before the first send. Only the saved selection can be submitted with this attempt.
-    UI-->>Customer: Placing your order…
+    else Attempt pending
+    UI->>UI: recoverPending()
+    end
+    Note over UI: Save this attempt and its reviewed selection for same-browser recovery. Do not submit a different selection under it.
     UI->>C: submit(context, attempt, selection)
     C->>S: accept(context, attempt, selection)
     S->>O: findAccepted(context, attempt)
-    alt Same attempt already accepted
+    alt Attempt already accepted
     O-->>S: Original order and its recorded selection
-    alt Same selection
-    S->>S: buildConfirmation(order)
-    else Different selection
-    Note over S,O: An accepted attempt authorizes no other selection. No new order and no edit. The result says the different selection was not ordered.
-    S->>S: buildConfirmation(order)
-    end
-    else Not already accepted
-    O-->>S: No accepted order, not proof of rejection
+    Note over S,O: Return the same order even after closing. A different selection is not ordered.
+    else Acceptance not yet established
     S->>M: readCurrentMenu()
-    M-->>S: Current item values and availability
     S->>R: readRestaurant()
-    R-->>S: Configured hours, timezone and contact
     S->>P: isOpen(restaurant, now)
-    P-->>S: Open or closed
     opt Restaurant closed
     S->>P: nextOpening(restaurant, now)
-    P-->>S: Next opening, or none in the weekly schedule
     end
     S->>S: validateSelection(selection, menu)
-    Note over S: A valid selection yields the proposal: accepted lines and total at current prices.
-    alt Restaurant closed or preliminary correction needed
+    alt Closed or correction needed
     S->>O: resolveRejectedAttempt(context, attempt)
-    alt Same attempt accepted concurrently
-    O-->>S: Original acceptance
-    S->>S: buildConfirmation(order)
-    else No acceptance, serialized with acceptOnce
-    O-->>S: Attempt closed, no order created by rejected decision
-    Note over S,O: Return correction or changed-menu review with no order, preserving the cart. When closed, give the next opening, or the contact information if none exists.
-    else Not serialized with acceptOnce
-    O-->>S: Unresolved, absence of an accepted record is not proof of rejection
-    end
-    else Preliminary checks valid
+    O-->>S: Prior acceptance, closed attempt with correction, or unresolved
+    Note over S,O: Resolve any competing acceptance before reporting rejection. A closed attempt cannot later be accepted.
+    else Selection valid
     S->>O: acceptOnce(context, attempt, selection, proposal)
-    Note over S,O: Decisive boundary rechecks current acceptance conditions and serializes same-attempt outcomes. No particular locking or transaction mechanism is prescribed.
-    alt New acceptance
+    opt New order accepted
     O->>O: issuePrivateLink()
-    O-->>S: One new Received order, immutable contents, order number and private link
+    end
+    O-->>S: New or prior acceptance, rejection, or unresolved
+    Note over S,O: Recheck acceptance conditions and record at most one order with immutable contents. Issue the private link only for a new order. The implementation chooses how to make this decision indivisible.
+    end
+    end
+    opt Result is accepted
     S->>S: buildConfirmation(order)
-    else Same attempt accepted concurrently
-    O-->>S: The same order and current status, a different selection is not ordered
-    S->>S: buildConfirmation(order)
-    else Conditions changed or attempt closed
-    O-->>S: Attempt closed, correction or explicit review required, no new order
     end
-    end
-    end
-    S-->>C: Accepted confirmation, correction or unresolved
+    S-->>C: Actual result
     alt Known acceptance
-    C-->>UI: Known acceptance
-    UI-->>Customer: Acceptance result, show confirmation under A5, and say if a different selection was not ordered. Preserve unrelated cart choices.
+    C-->>UI: Confirmation
+    UI-->>Customer: Show accepted order under A5 and explain if a different selection was not ordered
     else Known rejection
-    C-->>UI: Known rejection and its correction
+    C-->>UI: Correction or closing information
     UI->>UI: clearPending()
     UI->>Cart: applyCorrection(correction)
-    Cart-->>UI: Cart kept with current prices, unavailable items stay marked, no substitution or reduced quantity
-    UI-->>Customer: Explain the correction, or the next opening, or the contact information when none exists, keep cart and require deliberate resubmission, which begins a new attempt
-    else Unresolved
-    C-->>UI: Unresolved, pending attempt stays
-    UI-->>Customer: We couldn't confirm the result, check this order under A4 before placing another
-    else No response before timeout
-    UI-->>Customer: We couldn't confirm the result, pending attempt stays, check this order under A4 before placing another
+    UI-->>Customer: Keep cart and explain correction, next opening or contact
+    else Unresolved or response unavailable
+    UI-->>Customer: Outcome uncertain, recover this attempt under A4
     end
-    Note over UI,O: Same-attempt duplicate prevention is always required. A4 handles uncertain outcomes, and A5 presents accepted confirmation without creating another order.
+    Note over UI,Cart: Keep unavailable items identified and preserve unrelated choices. A corrected deliberate submission starts a new attempt.
 ```
 
 ## A4-submission-recovery
@@ -359,54 +343,47 @@ sequenceDiagram
     participant O as OrderStore
     Customer->>UI: Return to an attempt with missing confirmation
     UI->>UI: recoverPending()
-    Note over UI: Restores the same-browser attempt and its reviewed selection. If browser data was cleared, no recovery is promised.
-    alt Browser data was cleared
-    UI-->>Customer: No pending attempt, no recovery promised, a saved tracking link still opens its order
+    alt No saved attempt
+    UI-->>Customer: No recovery promised, saved tracking link still works
     else Pending attempt found
-    UI-->>Customer: Outcome uncertain, recover this attempt before placing another order
+    UI-->>Customer: Outcome uncertain, recover this attempt before a new order
     Customer->>UI: Check order
     UI->>C: recover(context, attempt)
     C->>S: recover(context, attempt)
     S->>O: findAccepted(context, attempt)
-    alt Original acceptance found
-    O-->>S: Original order, even if restaurant is now closed
+    alt Acceptance found
+    O-->>S: Original order, including after closing
     S->>S: buildConfirmation(order)
-    S-->>C: Same order identity, accepted contents and tracking link
-    C-->>UI: Accepted result for A5 confirmation
-    UI-->>Customer: Original order found, show confirmation under A5
-    else Acceptance not yet established
-    O-->>S: No accepted record for this customer context, not proof of rejection, no other customer's order exposed
-    Note over S,O: A closed attempt answers the same way here, and its correction comes from Retry safely, since recover holds no selection.
-    S-->>C: Still unresolved
-    C-->>UI: Retain pending attempt and original reviewed selection
-    UI-->>Customer: Still unconfirmed, offer Retry safely, pending attempt and selection kept
-    Customer->>UI: Retry same attempt safely
+    S-->>C: Original accepted result
+    C-->>UI: Confirmation for A5
+    UI-->>Customer: Original order found
+    else Acceptance not established
+    O-->>S: No accepted record, outcome remains uncertain
+    S-->>C: Unresolved
+    C-->>UI: Keep pending attempt and reviewed selection
+    UI-->>Customer: Offer safe retry of the same attempt
+    Customer->>UI: Retry safely
     UI->>C: submit(context, attempt, selection)
     C->>S: accept(context, attempt, selection)
-    Note over S,O: Same attempt and same saved selection. Execute the complete A3 acceptance path, including current checks for a new acceptance and same-attempt serialization. Do not bypass validation or create a fresh attempt.
-    alt Original acceptance or valid new acceptance of same attempt
-    S-->>C: One accepted order, original confirmation identity
-    C-->>UI: Known acceptance for A5
-    UI-->>Customer: Order confirmed, show confirmation under A5
-    else Confirmed rejection
-    S-->>C: Actionable correction, no accepted order, attempt closed
-    C-->>UI: Retain cart, allow deliberate correction
+    Note over S,O: Follow the complete A3 acceptance path using the original selection. No different order is created for this attempt.
+    alt Accepted
+    S-->>C: Same accepted order
+    C-->>UI: Confirmation for A5
+    UI-->>Customer: Order confirmed
+    else Definitive rejection
+    S-->>C: Correction and closed attempt
+    C-->>UI: Correction
     UI->>UI: clearPending()
     UI->>Cart: applyCorrection(correction)
-    Cart-->>UI: Cart kept with current prices, unavailable items stay marked
-    UI-->>Customer: Explain correction, keep cart, a corrected submission begins a new attempt
-    else Still unresolved
-    S-->>C: Still unresolved, pending attempt stays
-    C-->>UI: Retain pending attempt and original reviewed selection
-    UI-->>Customer: Remain uncertain, do not claim rejection or silently place another order
-    else No response before timeout
-    UI-->>Customer: Remain uncertain, do not claim rejection or silently place another order
+    UI-->>Customer: Keep cart and explain the correction
+    else Still unresolved or response unavailable
+    UI-->>Customer: Remain uncertain and retain the pending attempt
     end
-    else No response to Check order before timeout
-    UI-->>Customer: Remain uncertain, offer Check order again or Retry safely, pending attempt and selection kept
+    else Check unavailable
+    UI-->>Customer: Remain uncertain and offer recovery again
     end
     end
-    Note over UI,O: Recovery cannot expose another customer's order. A deliberately new order is distinct from retrying this pending attempt and starts only after this result is known.
+    Note over UI,O: Recovery reveals no other customer's order. A corrected deliberate submission starts a new attempt only after rejection is known.
 ```
 
 ## A5-confirmation-link
@@ -463,6 +440,11 @@ sequenceDiagram
     UI->>UI: signIn()
     UI->>A: signIn(credentials)
     A->>Access: signIn(credentials)
+    alt Excessive sign-in attempts temporarily limited
+    Access-->>A: Temporarily limited, generic retry guidance
+    A-->>UI: Sign-in temporarily unavailable, retry guidance
+    UI-->>Employee: Explain when or how to retry, no account existence or order data disclosed
+    else Sign-in attempt permitted
     Access->>I: authenticate(credentials)
     I-->>Access: Access context or generic failure
     Access-->>A: Sign-in outcome
@@ -517,7 +499,6 @@ sequenceDiagram
     end
     end
     end
-    end
     opt Employee signs out
     Employee->>UI: Sign out
     UI->>UI: signOut()
@@ -531,6 +512,8 @@ sequenceDiagram
     UI-->>Employee: Signed out, no order data
     else No response before timeout
     UI-->>Employee: Sign-out not confirmed, try again
+    end
+    end
     end
     end
 ```
@@ -576,6 +559,7 @@ sequenceDiagram
     U-->>UI: Newest response only, update successful check, clear stale warning, advance observedRevision unless an action is in progress
     UI->>UI: showDetail(order)
     UI-->>Employee: Accepted values, local time, history and actions, draft reason kept
+    Note over UI: Keep observedRevision for conflict handling and hide its internal value from staff.
     else Order not found
     O-->>S: Not found
     S-->>C: Unavailable order
@@ -617,49 +601,48 @@ sequenceDiagram
     participant L as OrderLifecycle
     participant O as OrderStore
     Employee->>UI: Choose permitted next action
-    Note over UI: observedRevision is fixed here, at the detail the employee was shown, and is the revision sent below. Refreshes do not move it. Once the action is dismissed or its outcome is known it advances to the newest detail received.
-    break Last refresh failed, stale warning showing
-    UI-->>Employee: May be out of date, refresh before choosing, no request sent, typed reason kept
+    Note over UI: Use the revision the employee saw when choosing the action. Refresh must not silently change it during confirmation.
+    break Detail is stale
+    UI-->>Employee: Refresh before acting, keep any typed reason
     end
     opt Cancellation chosen
-    UI-->>Employee: Request reason and final confirmation, reason customer-visible
+    UI-->>Employee: Request customer-visible reason and final confirmation
     Employee->>UI: Enter reason and confirm or dismiss
     end
     alt Cancellation dismissed
-    UI-->>Employee: No request, no change, retain reason in current view
-    else Action explicitly submitted
+    UI-->>Employee: No change, retain reason in current view
+    else Action submitted
     UI->>UI: requestChange(target, reason)
     UI->>C: changeStatus(context, number, revision, target, reason)
     C->>Access: requireStaff(context)
     alt Access denied
     Access-->>C: Denial
-    C-->>UI: No change, access guidance
-    UI-->>Employee: No change, sign-in required or access denied, typed reason kept
+    C-->>UI: No change, sign-in or access guidance
     else Authorized
     Access-->>C: Employee
     C->>S: changeStatus(number, revision, target, reason, employee)
     S->>O: readOrder(number)
     alt Order unavailable
     O-->>S: Not found
-    S-->>C: Unavailable order, no change
-    else Current order available
+    S-->>C: Unavailable order
+    else Order found
     O-->>S: Current detail and revision
-    alt Requested revision already stale
-    S-->>C: Conflict with current detail, no change
-    else Revision matches current read
+    alt Already stale
+    S-->>C: Conflict and current detail
+    else Current revision
     S->>L: validateChange(status, target, reason)
-    alt Invalid action or blank or whitespace-only cancellation reason
+    alt Invalid action or reason
     L-->>S: Correction
     S-->>C: Rejected, no change
-    else Valid proposed action
+    else Action valid
     L-->>S: Proposed transition permitted
     S->>O: changeIfCurrent(number, revision, target, reason, employee)
-    Note over S,O: One indivisible decision checks current revision AND lifecycle/reason, then saves status and employee/time history together. Two same-revision changes cannot both succeed.
-    alt Observed state no longer current
+    Note over S,O: Check revision and transition at the decision boundary. Save status and employee/time history together. Only one change from the same revision can succeed.
+    alt Stale revision
     O-->>S: Conflict and current detail
-    S-->>C: No overwrite, current state and explanation
+    S-->>C: No change, explain conflict
     else Accepted
-    O-->>S: New current detail and history
+    O-->>S: Updated detail and history
     S-->>C: Accepted change
     end
     end
@@ -669,13 +652,13 @@ sequenceDiagram
     opt Conflict
     UI->>UI: showConflict(currentOrder)
     end
-    UI-->>Employee: Accepted result, correction or explicit conflict review
+    UI-->>Employee: Result or correction, review before another action
     end
     end
-    opt Write outcome uncertain, or no response before timeout
+    opt Write outcome uncertain
     UI->>C: getDetail(context, number)
-    C-->>UI: Actual current state/history or unavailable, through authorized read
-    UI-->>Employee: Review before any new deliberate action, no automatic write retry, typed reason kept
+    C-->>UI: Current state and history, or unavailable
+    UI-->>Employee: Review before a new deliberate action, no automatic retry
     end
 ```
 
