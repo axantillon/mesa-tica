@@ -1,33 +1,41 @@
 flowchart TB
     subgraph Browser["Browser frontend"]
-        Customer["CustomerView: menu, cart, confirmation"]
-        Staff["StaffView: sign-in, queue and detail"]
-        Tracking["TrackingView: private progress and instructions"]
-        Updates["UpdateCoordinator: current data, last success and recovery"]
+        Customer["A · CustomerView<br/>Menu, cart and confirmation"]
+        Staff["B · StaffView<br/>Sign-in, queue and detail"]
+        Tracking["C · TrackingView<br/>Private progress and guidance"]
+        Updates["UpdateCoordinator<br/>Current data, last success and recovery"]
         Staff --> Updates
         Tracking --> Updates
     end
     subgraph Backend["Web backend runtime"]
         Delivery["Page and asset delivery"]
-        Boundaries["MenuController / OrderController / StaffOrderController / TrackingController / AuthController"]
-        Access["AccessService: staff identity and authorization"]
-        Services["MenuService / CheckoutService / OrderService / TrackingService"]
-        Policies["OpeningPolicy / OrderLifecycle: business decisions"]
-        Stores["MenuStore / RestaurantStore / OrderStore / IdentityStore: persistence handlers"]
-        Delivery --> Boundaries
-        Boundaries --> Access
-        Boundaries --> Services
-        Services --> Policies
-        Services --> Stores
+        AControllers["A · MenuController / OrderController"]
+        BControllers["B · AuthController / StaffOrderController"]
+        CController["C · TrackingController"]
+        Access["AccessService<br/>Staff identity and authorization"]
+        AServices["A · MenuService / CheckoutService"]
+        BService["B · OrderService"]
+        CService["C · TrackingService"]
+        Policies["OpeningPolicy / OrderLifecycle<br/>Business decisions"]
+        Stores["Data layer · MenuStore / RestaurantStore<br/>OrderStore / IdentityStore"]
+        AControllers --> AServices
+        BControllers --> Access
+        BControllers --> BService
+        CController --> CService
+        AServices --> Policies
+        BService --> Policies
+        AServices --> Stores
+        BService --> Stores
+        CService --> Stores
         Access --> Stores
     end
-    Durable[("Durable data: restaurant/menu, accepted orders/lines, submissions, status history and staff access")]
-    Setup["SetupRunner: repeatable local setup and staff provisioning"]
-    Customer -->|"Browse and submit/recover order"| Delivery
-    Staff -->|"Sign in, inspect, change status"| Delivery
-    Tracking -->|"Open private link"| Delivery
-    Updates -->|"Read current authorized queue/detail or private snapshot"| Boundaries
+    Durable[("Durable data<br/>Restaurant and menu, accepted orders and lines,<br/>submissions, status history and staff access")]
+    Setup["SetupRunner<br/>Repeatable setup and staff provisioning"]
+    Browser -->|"Pages and assets"| Delivery
+    Customer -->|"Browse, submit and recover"| AControllers
+    Staff -->|"Sign in, inspect and change status"| BControllers
+    Tracking -->|"Open private link"| CController
+    Updates -->|"Current authorized queue or detail"| BControllers
+    Updates -->|"Current private snapshot"| CController
     Stores --> Durable
     Setup --> Stores
-    Decisions["Logical boundaries, not separately deployed microservices. Agent chooses framework, language, rendering, authentication mechanism, data technology, update transport and hosting. Acceptance and staff changes must preserve the specified indivisible consistency guarantees."]
-    Decisions -.-> Backend

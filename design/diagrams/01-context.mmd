@@ -4,9 +4,9 @@ flowchart LR
     Setup["Restaurant setup: menu, hours and staff access"]
     Physical["Cooking, handoff and payment outside the app"]
     subgraph Product["Mesa Tica pickup ordering"]
-        Ordering["Browse menu, edit cart, place order: A1-A5"]
-        Operations["See queue, inspect and update orders: B1-B3"]
-        Tracking["Open private link, check status and pickup: C1-C3"]
+        Ordering["A · Customer ordering<br/>Browse, edit cart and place order<br/>A1–A5"]
+        Operations["B · Restaurant operations<br/>Queue, order details and status changes<br/>B1–B3"]
+        Tracking["C · Customer tracking<br/>Private link, status and pickup guidance<br/>C1–C3"]
     end
     Customer --> Ordering
     Customer --> Tracking

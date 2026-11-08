@@ -12,81 +12,53 @@ sequenceDiagram
     participant P as OpeningPolicy
     Customer->>UI: Place reviewed pickup order
     UI->>UI: reviewAndSubmit()
-    alt No pending attempt
+    alt New submission
     UI->>UI: beginAttempt()
-    Note over UI: Creates one attempt and fixes its selection as a copy of the reviewed cart.
-    else Pending attempt, result not yet known
-    UI->>UI: recoverPending()
-    Note over UI: Reuses the same attempt and its saved selection, never an edited cart. Repeated taps land here and can only resend this attempt. After a timeout the page offers Check order instead of Place, and Retry safely follows from A4.
-    end
     UI->>UI: savePending()
-    Note over UI: Save the attempt and selection for same-browser recovery before the first send. Only the saved selection can be submitted with this attempt.
-    UI-->>Customer: Placing your order…
+    else Attempt pending
+    UI->>UI: recoverPending()
+    end
+    Note over UI: Save this attempt and its reviewed selection for same-browser recovery. Do not submit a different selection under it.
     UI->>C: submit(context, attempt, selection)
     C->>S: accept(context, attempt, selection)
     S->>O: findAccepted(context, attempt)
-    alt Same attempt already accepted
+    alt Attempt already accepted
     O-->>S: Original order and its recorded selection
-    alt Same selection
-    S->>S: buildConfirmation(order)
-    else Different selection
-    Note over S,O: An accepted attempt authorizes no other selection. No new order and no edit. The result says the different selection was not ordered.
-    S->>S: buildConfirmation(order)
-    end
-    else Not already accepted
-    O-->>S: No accepted order, not proof of rejection
+    Note over S,O: Return the same order even after closing. A different selection is not ordered.
+    else Acceptance not yet established
     S->>M: readCurrentMenu()
-    M-->>S: Current item values and availability
     S->>R: readRestaurant()
-    R-->>S: Configured hours, timezone and contact
     S->>P: isOpen(restaurant, now)
-    P-->>S: Open or closed
     opt Restaurant closed
     S->>P: nextOpening(restaurant, now)
-    P-->>S: Next opening, or none in the weekly schedule
     end
     S->>S: validateSelection(selection, menu)
-    Note over S: A valid selection yields the proposal: accepted lines and total at current prices.
-    alt Restaurant closed or preliminary correction needed
+    alt Closed or correction needed
     S->>O: resolveRejectedAttempt(context, attempt)
-    alt Same attempt accepted concurrently
-    O-->>S: Original acceptance
-    S->>S: buildConfirmation(order)
-    else No acceptance, serialized with acceptOnce
-    O-->>S: Attempt closed, no order created by rejected decision
-    Note over S,O: Return correction or changed-menu review with no order, preserving the cart. When closed, give the next opening, or the contact information if none exists.
-    else Not serialized with acceptOnce
-    O-->>S: Unresolved, absence of an accepted record is not proof of rejection
-    end
-    else Preliminary checks valid
+    O-->>S: Prior acceptance, closed attempt with correction, or unresolved
+    Note over S,O: Resolve any competing acceptance before reporting rejection. A closed attempt cannot later be accepted.
+    else Selection valid
     S->>O: acceptOnce(context, attempt, selection, proposal)
-    Note over S,O: Decisive boundary rechecks current acceptance conditions and serializes same-attempt outcomes. No particular locking or transaction mechanism is prescribed.
-    alt New acceptance
+    opt New order accepted
     O->>O: issuePrivateLink()
-    O-->>S: One new Received order, immutable contents, order number and private link
+    end
+    O-->>S: New or prior acceptance, rejection, or unresolved
+    Note over S,O: Recheck acceptance conditions and record at most one order with immutable contents. Issue the private link only for a new order. The implementation chooses how to make this decision indivisible.
+    end
+    end
+    opt Result is accepted
     S->>S: buildConfirmation(order)
-    else Same attempt accepted concurrently
-    O-->>S: The same order and current status, a different selection is not ordered
-    S->>S: buildConfirmation(order)
-    else Conditions changed or attempt closed
-    O-->>S: Attempt closed, correction or explicit review required, no new order
     end
-    end
-    end
-    S-->>C: Accepted confirmation, correction or unresolved
+    S-->>C: Actual result
     alt Known acceptance
-    C-->>UI: Known acceptance
-    UI-->>Customer: Acceptance result, show confirmation under A5, and say if a different selection was not ordered. Preserve unrelated cart choices.
+    C-->>UI: Confirmation
+    UI-->>Customer: Show accepted order under A5 and explain if a different selection was not ordered
     else Known rejection
-    C-->>UI: Known rejection and its correction
+    C-->>UI: Correction or closing information
     UI->>UI: clearPending()
     UI->>Cart: applyCorrection(correction)
-    Cart-->>UI: Cart kept with current prices, unavailable items stay marked, no substitution or reduced quantity
-    UI-->>Customer: Explain the correction, or the next opening, or the contact information when none exists, keep cart and require deliberate resubmission, which begins a new attempt
-    else Unresolved
-    C-->>UI: Unresolved, pending attempt stays
-    UI-->>Customer: We couldn't confirm the result, check this order under A4 before placing another
-    else No response before timeout
-    UI-->>Customer: We couldn't confirm the result, pending attempt stays, check this order under A4 before placing another
+    UI-->>Customer: Keep cart and explain correction, next opening or contact
+    else Unresolved or response unavailable
+    UI-->>Customer: Outcome uncertain, recover this attempt under A4
     end
-    Note over UI,O: Same-attempt duplicate prevention is always required. A4 handles uncertain outcomes, and A5 presents accepted confirmation without creating another order.
+    Note over UI,Cart: Keep unavailable items identified and preserve unrelated choices. A corrected deliberate submission starts a new attempt.

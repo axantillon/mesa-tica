@@ -9,49 +9,48 @@ sequenceDiagram
     participant L as OrderLifecycle
     participant O as OrderStore
     Employee->>UI: Choose permitted next action
-    Note over UI: observedRevision is fixed here, at the detail the employee was shown, and is the revision sent below. Refreshes do not move it. Once the action is dismissed or its outcome is known it advances to the newest detail received.
-    break Last refresh failed, stale warning showing
-    UI-->>Employee: May be out of date, refresh before choosing, no request sent, typed reason kept
+    Note over UI: Use the revision the employee saw when choosing the action. Refresh must not silently change it during confirmation.
+    break Detail is stale
+    UI-->>Employee: Refresh before acting, keep any typed reason
     end
     opt Cancellation chosen
-    UI-->>Employee: Request reason and final confirmation, reason customer-visible
+    UI-->>Employee: Request customer-visible reason and final confirmation
     Employee->>UI: Enter reason and confirm or dismiss
     end
     alt Cancellation dismissed
-    UI-->>Employee: No request, no change, retain reason in current view
-    else Action explicitly submitted
+    UI-->>Employee: No change, retain reason in current view
+    else Action submitted
     UI->>UI: requestChange(target, reason)
     UI->>C: changeStatus(context, number, revision, target, reason)
     C->>Access: requireStaff(context)
     alt Access denied
     Access-->>C: Denial
-    C-->>UI: No change, access guidance
-    UI-->>Employee: No change, sign-in required or access denied, typed reason kept
+    C-->>UI: No change, sign-in or access guidance
     else Authorized
     Access-->>C: Employee
     C->>S: changeStatus(number, revision, target, reason, employee)
     S->>O: readOrder(number)
     alt Order unavailable
     O-->>S: Not found
-    S-->>C: Unavailable order, no change
-    else Current order available
+    S-->>C: Unavailable order
+    else Order found
     O-->>S: Current detail and revision
-    alt Requested revision already stale
-    S-->>C: Conflict with current detail, no change
-    else Revision matches current read
+    alt Already stale
+    S-->>C: Conflict and current detail
+    else Current revision
     S->>L: validateChange(status, target, reason)
-    alt Invalid action or blank or whitespace-only cancellation reason
+    alt Invalid action or reason
     L-->>S: Correction
     S-->>C: Rejected, no change
-    else Valid proposed action
+    else Action valid
     L-->>S: Proposed transition permitted
     S->>O: changeIfCurrent(number, revision, target, reason, employee)
-    Note over S,O: One indivisible decision checks current revision AND lifecycle/reason, then saves status and employee/time history together. Two same-revision changes cannot both succeed.
-    alt Observed state no longer current
+    Note over S,O: Check revision and transition at the decision boundary. Save status and employee/time history together. Only one change from the same revision can succeed.
+    alt Stale revision
     O-->>S: Conflict and current detail
-    S-->>C: No overwrite, current state and explanation
+    S-->>C: No change, explain conflict
     else Accepted
-    O-->>S: New current detail and history
+    O-->>S: Updated detail and history
     S-->>C: Accepted change
     end
     end
@@ -61,11 +60,11 @@ sequenceDiagram
     opt Conflict
     UI->>UI: showConflict(currentOrder)
     end
-    UI-->>Employee: Accepted result, correction or explicit conflict review
+    UI-->>Employee: Result or correction, review before another action
     end
     end
-    opt Write outcome uncertain, or no response before timeout
+    opt Write outcome uncertain
     UI->>C: getDetail(context, number)
-    C-->>UI: Actual current state/history or unavailable, through authorized read
-    UI-->>Employee: Review before any new deliberate action, no automatic write retry, typed reason kept
+    C-->>UI: Current state and history, or unavailable
+    UI-->>Employee: Review before a new deliberate action, no automatic retry
     end

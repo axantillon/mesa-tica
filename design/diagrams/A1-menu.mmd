@@ -19,13 +19,17 @@ sequenceDiagram
     P-->>S: Opening state and next opening if any
     S-->>C: Menu presentation
     C-->>UI: Menu and opening information
-    UI-->>Customer: Browse all dishes and prices
+    UI-->>Customer: Browse grouped dishes and prices
     alt Dish available
     Customer->>UI: Add dish
-    UI->>UI: Add or increase quantity in cart
+    UI->>UI: Increase cart quantity
     else Dish unavailable
     UI-->>Customer: Explain unavailable, no addition
     end
     opt Restaurant closed
-    UI-->>Customer: Cart preparation allowed, submission disabled, next-opening guidance
+    alt Next opening known
+    UI-->>Customer: Cart editable, disabled button shows next local opening
+    else No upcoming opening
+    UI-->>Customer: Cart editable, ordering closed, show contact
+    end
     end
