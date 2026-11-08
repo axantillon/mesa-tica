@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Staff orders · Mesa Tica</title>
+  <link rel="icon" href="/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/staff.js"></script>
+</head>
+<body>
+  <header class="site-header"><div class="shell"><a class="brand" href="/">Mesa Tica</a><span>Staff workspace</span></div></header>
+  <main class="shell staff-main">
+    <p id="session-loading" role="status">Checking staff access…</p>
+    <section id="sign-in" class="panel narrow" hidden aria-labelledby="sign-in-heading">
+      <p class="eyebrow">Staff workspace</p>
+      <h1 id="sign-in-heading" tabindex="-1">Staff sign-in</h1>
+      <p>Sign in with your provisioned staff account to manage pickup orders.</p>
+      <p id="sign-in-note" class="notice" role="status" hidden></p>
+      <form id="sign-in-form" class="field-stack" method="post" action="/api/staff/sign-in">
+        <label>Username<input name="username" autocomplete="username" maxlength="64" required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" maxlength="256" required></label>
+        <button class="button" type="submit">Sign in</button>
+      </form>
+    </section>
+
+    <section id="workspace" hidden>
+      <div class="staff-heading">
+        <div>
+          <p class="eyebrow">Pickup operations</p>
+          <h1 id="workspace-heading" tabindex="-1">Pickup queue</h1>
+        </div>
+        <div class="actions">
+          <span id="employee"></span>
+          <button class="button quiet" type="button" id="sign-out">Sign out</button>
+        </div>
+      </div>
+      <div id="queue-tools" hidden>
+        <label for="filter">Show orders</label>
+        <select id="filter">
+          <option>Active</option><option>Received</option><option>Preparing</option><option>Ready</option>
+          <option>Collected</option><option>Cancelled</option><option>All</option>
+        </select>
+      </div>
+      <a id="back-queue" class="button text" href="/staff" hidden>Back to queue</a>
+      <p id="staff-warning" class="notice" role="status" hidden></p>
+      <p id="staff-checked" class="small" hidden></p>
+      <p id="staff-feedback" class="notice" role="status" tabindex="-1" hidden></p>
+      <div id="staff-content"><p role="status">Loading orders…</p></div>
+    </section>
+  </main>
+
+  <dialog id="cancel-dialog" aria-labelledby="cancel-heading">
+    <form id="cancel-form" class="field-stack">
+      <h2 id="cancel-heading">Cancel order?</h2>
+      <label for="cancel-reason">Cancellation reason</label>
+      <textarea id="cancel-reason" required maxlength="500" aria-describedby="reason-help"></textarea>
+      <p id="reason-help" class="small">The customer will see this reason. Leave out private information.</p>
+      <p id="dialog-warning" class="notice" role="status" hidden></p>
+      <div class="actions">
+        <button class="button quiet" type="button" id="keep-order">Keep order</button>
+        <button class="button danger" type="submit" id="confirm-cancel">Confirm cancellation</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="shell site-footer">Mesa Tica pickup counter · Fictional restaurant</footer>
+</body>
+</html>
