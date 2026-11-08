@@ -1,0 +1,1 @@
+{"name":"mesa-tica","version":"1.0.0","private":true,"type":"module","scripts":{"setup":"node setup.js","start":"node server.js","test":"node --test"},"engines":{"node":">=24"}}
