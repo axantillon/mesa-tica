@@ -160,5 +160,46 @@ export function openStores(dataDir) {
     revokeAccess: (tokenHash) => { db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(tokenHash); },
   };
 
-  return { db, transaction, restaurantStore, menuStore, identityStore, close: () => db.close() };
+  const selectAttempt = db.prepare('SELECT * FROM attempts WHERE context = ? AND attempt = ?');
+  const insertAttempt = db.prepare(`INSERT INTO attempts (context, attempt, selection, order_number, rejection, created_at)
+                                    VALUES (?, ?, ?, ?, ?, ?)`);
+  const insertOrder = db.prepare(`INSERT INTO orders (token, submitted_at, status, total) VALUES (?, ?, 'Received', ?)`);
+  const insertItem = db.prepare(`INSERT INTO order_items (order_number, line, item_id, name, price, quantity, subtotal)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  const selectOrder = db.prepare('SELECT * FROM orders WHERE number = ?');
+  const selectItems = db.prepare('SELECT name, price, quantity, subtotal FROM order_items WHERE order_number = ? ORDER BY line');
+
+  const hydrate = (row) => row && {
+    number: row.number,
+    token: row.token,
+    submittedAt: row.submitted_at,
+    status: row.status,
+    revision: row.revision,
+    total: row.total,
+    cancellationReason: row.cancellation_reason,
+    items: selectItems.all(row.number).map((item) => ({ ...item })),
+  };
+
+  /** At least 128 bits of entropy (here 256); issued once, with the order. */
+  const issuePrivateLink = () => randomBytes(32).toString('base64url');
+
+  const orderStore = {
+    /** The recorded outcome of a scoped attempt, or undefined when none is established. */
+    findAttempt: (context, attempt) => selectAttempt.get(context, attempt),
+    closeAttempt: (context, attempt, selection, rejection, at) => {
+      insertAttempt.run(context, attempt, selection, null, JSON.stringify(rejection), at);
+    },
+    /** Records the order, its immutable lines and its accepted attempt. Call inside a transaction. */
+    recordAccepted: (context, attempt, selection, lines, total, at) => {
+      const number = Number(insertOrder.run(issuePrivateLink(), at, total).lastInsertRowid);
+      lines.forEach((line, index) => {
+        insertItem.run(number, index, line.itemId, line.name, line.price, line.quantity, line.subtotal);
+      });
+      insertAttempt.run(context, attempt, selection, number, null, at);
+      return number;
+    },
+    readOrder: (number) => hydrate(selectOrder.get(number)),
+  };
+
+  return { db, transaction, restaurantStore, menuStore, orderStore, identityStore, close: () => db.close() };
 }

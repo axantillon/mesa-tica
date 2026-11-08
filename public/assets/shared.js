@@ -26,6 +26,17 @@ export function patch(el, template) {
 
 export const money = (amount) => `₡${amount.toLocaleString('en-US')}`;
 
+/** The accepted lines of an order, as shown on confirmation, tracking and staff detail. */
+export const orderLines = (items, total) => html`
+  <table class="lines">
+    <caption class="sr-only">Accepted items</caption>
+    <thead><tr><th scope="col">Item</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Price</th><th scope="col" class="num">Subtotal</th></tr></thead>
+    <tbody>${items.map((item) => html`
+      <tr><td>${item.name}</td><td class="num">${item.quantity}</td><td class="num">${money(item.price)}</td><td class="num">${money(item.subtotal)}</td></tr>`)}
+    </tbody>
+    <tfoot><tr><th scope="row" colspan="3">Total</th><td class="num total">${money(total)}</td></tr></tfoot>
+  </table>`;
+
 /** Every failure to obtain a parsed response (offline, timeout, non-JSON) is status 0. */
 export async function api(path, { method = 'GET', body, timeoutMs = 8000 } = {}) {
   const controller = new AbortController();

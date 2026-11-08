@@ -4,10 +4,16 @@
   "private": true,
   "description": "Pickup ordering for the fictional Mesa Tica restaurant.",
   "type": "module",
-  "engines": { "node": ">=22.13" },
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "setup": "node --disable-warning=ExperimentalWarning src/setup.js",
     "start": "npm run --silent setup && node --disable-warning=ExperimentalWarning src/main.js",
-    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.js"
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/*.test.js",
+    "test:e2e": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 test/e2e/*.test.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   }
 }
