@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mesa Tica · Staff queue</title>
+  <link rel="stylesheet" href="/shared/style.css">
+  <script type="module" src="/b-staff/StaffPage.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Mesa Tica · Staff</h1>
+    <p id="who"></p>
+  </header>
+  <main>
+    <form id="sign-in" class="panel narrow" hidden>
+      <h2>Sign in</h2>
+      <label>Username <input name="username" autocomplete="username" required></label>
+      <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+      <p id="sign-in-message" class="error" role="alert"></p>
+      <button class="primary">Sign in</button>
+    </form>
+    <div id="queue-view" hidden>
+      <fieldset id="filter" class="filter">
+        <legend>Show</legend>
+      </fieldset>
+      <p id="refresh" class="banner" role="status"></p>
+      <div class="columns">
+        <section aria-labelledby="queue-title">
+          <h2 id="queue-title">Queue, oldest first</h2>
+          <ul id="queue" class="queue"></ul>
+        </section>
+        <section id="detail" class="panel" aria-live="polite">
+          <p class="muted">Open an order to see its items and change its status.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

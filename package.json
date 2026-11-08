@@ -1,0 +1,15 @@
+{
+  "name": "mesa-tica",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pickup ordering for one restaurant: menu and cart, staff queue, private tracking link.",
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "setup": "node setup.js",
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mesa Tica · Order for pickup</title>
+  <link rel="stylesheet" href="/shared/style.css">
+  <script type="module" src="/a-ordering/MenuPage.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Mesa Tica</h1>
+    <p>Order for pickup. Pay at collection.</p>
+  </header>
+  <main>
+    <p id="hours" class="banner" role="status">Loading the menu…</p>
+    <section id="confirmation" class="panel confirmation" hidden aria-live="polite"></section>
+    <div class="columns">
+      <section aria-labelledby="menu-title">
+        <h2 id="menu-title">Menu</h2>
+        <ul id="dishes" class="dishes"></ul>
+      </section>
+      <section id="cart" class="panel" aria-labelledby="cart-title">
+        <h2 id="cart-title">Your order</h2>
+        <div id="cart-body"></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
