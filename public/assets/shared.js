@@ -122,6 +122,7 @@ export function createUpdateCoordinator() {
 
   /** Applies data already known to be current (a write's response), superseding requests in flight. */
   function push(data) {
+    if (!target) return; // the view already closed, for example on session expiry
     appliedRequest = ++requests;
     publish({ data, checked: data.checked, stale: false, failed: false });
   }

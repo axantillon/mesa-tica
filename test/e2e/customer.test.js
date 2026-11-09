@@ -108,6 +108,17 @@ test('A2 typing keeps focus while totals update, and steppers work', withApp({},
   await totalIs(page, '₡12,000');
 }));
 
+test('A2 corrupted browser data does not break the page', withApp({}, async ({ app, page }) => {
+  await page.goto(app.base);
+  await page.evaluate(() => {
+    localStorage.setItem('mesa.pending.v1', '{"bad":1}');
+    localStorage.setItem('mesa.cart.v1', '"oops"');
+  });
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Add Horchata' })).toBeEnabled();
+  await expect(page.locator('#cart-link')).toContainText('0 items');
+}));
+
 test('A2 the cart survives a reload in the same browser', withApp({}, async ({ app, page }) => {
   await addDishes(page, app, WORKED);
   await page.reload();
@@ -187,6 +198,36 @@ test('A3-REVIEW reopening the cart surfaces price changes before any submit', wi
   await totalIs(page, '₡8,000');
   await page.reload();
   await expect(page.getByText('Chicken casado is now ₡4,600.')).toBeVisible();
+}));
+
+test('A3-REVIEW the order cannot be placed until opening the cart has re-checked the menu', withApp({}, async ({ app, page }) => {
+  await addDishes(page, app, WORKED);
+  app.setPrice('M1', 4600);
+  let release;
+  const held = new Promise((resolve) => { release = resolve; });
+  await page.route('**/api/menu', async (route) => { await held; await route.continue(); });
+  await page.getByRole('link', { name: /Review cart/ }).click();
+  await expect(page.locator('#place-why')).toHaveText('Checking current prices and availability…');
+  await expect(place(page)).toBeDisabled();
+  release();
+  await expect(page.getByText('Chicken casado is now ₡4,600.')).toBeVisible();
+  await totalIs(page, '₡8,000');
+  await expect(place(page)).toBeEnabled();
+}));
+
+test('A3 a closed rejection explains the next opening even if the menu never loaded', withApp({ at: costaRica(9, 22) }, async ({ app, page }) => {
+  await addDishes(page, app, [['Horchata']]);
+  await openCart(page);
+  await page.evaluate(() => {
+    const pending = { attempt: 'x'.repeat(32), selection: [{ itemId: 'D1', quantity: 1, reviewedPrice: 1300 }], lines: [{ name: 'Horchata', quantity: 1 }], total: 1300 };
+    localStorage.setItem('mesa.pending.v1', JSON.stringify(pending));
+  });
+  await page.route('**/api/menu', (route) => route.abort());
+  await page.goto(`${app.base}/#/cart`);
+  await page.reload();
+  await page.getByRole('button', { name: 'Check order' }).click();
+  await page.getByRole('button', { name: 'Retry safely' }).click();
+  await expect(page.getByText('Your order was not placed. Ordering is closed. Opens Tuesday, November 10, 10:00 AM.')).toBeVisible();
 }));
 
 test('A3-REVIEW an unavailable dish stays identified, blocks submit and keeps the rest of the cart', withApp({}, async ({ app, page }) => {

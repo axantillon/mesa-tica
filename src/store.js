@@ -92,7 +92,7 @@ export async function verifyPassword(password, stored) {
 }
 
 export function openStores(dataDir) {
-  mkdirSync(dataDir, { recursive: true });
+  mkdirSync(dataDir, { recursive: true, mode: 0o700 }); // holds private links and password hashes
   const db = new DatabaseSync(join(dataDir, 'mesa.db'));
   db.exec('PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   db.exec(SCHEMA);

@@ -1,7 +1,7 @@
 // Shared Playwright setup: every test gets the real app, isolated data and a fresh browser profile.
 
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+import playwright from 'playwright';
 import { startApp } from '../harness.js';
 
 export const PHONE = { width: 390, height: 780 };
@@ -9,8 +9,10 @@ export const TABLET = { width: 900, height: 1100 };
 
 let browser;
 
+export const BROWSER = process.env.E2E_BROWSER ?? 'chromium';
+
 export async function launchBrowser() {
-  browser = await chromium.launch();
+  browser = await playwright[BROWSER].launch();
 }
 export const closeBrowser = () => browser.close();
 

@@ -26,16 +26,22 @@ const loadCart = () => {
     : [];
 };
 
+const loadPending = () => {
+  const stored = local.get(PENDING_KEY, null);
+  return typeof stored?.attempt === 'string' && Array.isArray(stored.selection) && Array.isArray(stored.lines) ? stored : null;
+};
+
 let menu = null;
 let menuFailed = false;
 let cart = loadCart();
-let pending = local.get(PENDING_KEY, null); // the attempt bound to its reviewed selection, kept until its outcome is known
+let pending = loadPending(); // the attempt bound to its reviewed selection, kept until its outcome is known
 let phase = pending ? 'uncertain' : 'idle'; // idle | submitting | checking | uncertain | retryable
 let attemptHint = null;
 let cartNote = null;
 let drafts = {}; // text of invalid quantity edits, by item id
 let confirmation = session.get(CONFIRMATION_KEY, null);
 let copyState = 'idle';
+let reviewing = false; // opening the cart re-checks it against the current menu before an order can be placed
 
 const saveCart = () => local.set(CART_KEY, cart);
 const route = () => {
@@ -52,12 +58,13 @@ function customerContext() {
   return id;
 }
 
+const closedText = ({ nextOpening, contact, contactLabel }) => (nextOpening
+  ? `Ordering is closed. Opens ${nextOpening}.`
+  : `The restaurant is currently closed. Contact ${contact} (${contactLabel})`);
+
 function closedMessage() {
   if (!menu || menu.open) return null;
-  const { contact, contactLabel } = menu.restaurant;
-  return menu.nextOpening
-    ? `Ordering is closed. Opens ${menu.nextOpening}.`
-    : `The restaurant is currently closed. Contact ${contact} (${contactLabel})`;
+  return closedText({ nextOpening: menu.nextOpening, ...menu.restaurant });
 }
 
 function quantityProblem(text) {
@@ -68,6 +75,7 @@ function quantityProblem(text) {
 /** Why the order cannot be placed right now, or null when it can. */
 function submitBlock() {
   if (pending) return 'Check your earlier order attempt before placing another.';
+  if (reviewing) return 'Checking current prices and availability…';
   return closedMessage()
     ?? (Object.keys(drafts).length ? 'Correct the quantity above to continue.' : null)
     ?? (cart.some((row) => row.unavailable) ? 'Remove unavailable items to continue.' : null);
@@ -143,8 +151,7 @@ function pendingPanel() {
   const lines = pending.lines.map((line) => `${line.quantity} × ${line.name}`).join(', ');
   return html`
     <section class="alert" role="alert">
-      <h2 class="panel-title">We couldn't confirm the result</h2>
-      <p>We couldn't confirm the result. Check this order before placing another.</p>
+      <p><strong>We couldn't confirm the result. Check this order before placing another.</strong></p>
       <p><strong>This attempt:</strong> ${lines} · ${money(pending.total)}</p>
       ${phase === 'retryable' ? html`<p>We found no confirmed order for this attempt yet. Retry safely sends this same order again and cannot create a second one.</p>` : ''}
       ${attemptHint ? html`<p>${attemptHint}</p>` : ''}
@@ -210,7 +217,7 @@ function cartView() {
         </div>
         ${row.notice ? html`<p class="notice" role="status">${row.notice}</p>` : ''}
         <div class="cart-row-controls">
-          <label for="qty-${row.id}">Quantity</label>
+          <label for="qty-${row.id}">Quantity<span class="sr-only"> of ${row.name}</span></label>
           <button id="dec-${row.id}" class="step" data-action="step" data-id="${row.id}" data-by="-1" aria-label="Decrease quantity of ${row.name}" ${locked || row.unavailable || row.quantity <= 1 ? 'disabled' : ''}>−</button>
           <input id="qty-${row.id}" class="qty" data-id="${row.id}" inputmode="numeric" autocomplete="off"
             value="${row.id in drafts ? drafts[row.id] : row.quantity}" aria-describedby="err-${row.id}"
@@ -316,7 +323,7 @@ function applyRejection(result) {
   saveCart();
   if (menu) Object.assign(menu, { open: result.open, nextOpening: result.nextOpening });
   const parts = ['Your order was not placed.'];
-  if (result.closed) parts.push(result.open ? 'Ordering was closed at that time. You can place it again now.' : closedMessage());
+  if (result.closed) parts.push(result.open ? 'Ordering was closed at that time. You can place it again now.' : closedText(result));
   if (result.corrections.length) parts.push('Review the changes below, then place your order again.');
   cartNote = parts.join(' ');
   location.hash = '#/cart';
@@ -472,25 +479,34 @@ async function refreshMenu({ reconcile = false } = {}) {
   } else {
     menuFailed = true;
   }
-  if (reconcile) render();
-  else renderLive();
+  if (reconcile) {
+    reviewing = false; // if the check failed, the server still decides at submission
+    render();
+  } else {
+    renderLive();
+  }
+}
+
+function reviewCart() {
+  reviewing = true;
+  render();
+  refreshMenu({ reconcile: true });
 }
 
 window.addEventListener('hashchange', () => {
-  render();
   window.scrollTo(0, 0);
-  if (route() === 'cart') refreshMenu({ reconcile: true });
+  if (route() === 'cart') reviewCart();
+  else render();
 });
 
 window.addEventListener('storage', (event) => {
   if (event.key === CART_KEY) cart = loadCart();
   if (event.key === PENDING_KEY && phase !== 'submitting' && phase !== 'checking') {
-    pending = local.get(PENDING_KEY, null);
+    pending = loadPending();
     phase = pending ? 'uncertain' : 'idle';
   }
   render();
 });
 
-render();
-refreshMenu({ reconcile: true });
+reviewCart();
 setInterval(refreshMenu, MENU_REFRESH_MS);

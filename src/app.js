@@ -144,7 +144,12 @@ export function createApp({ dataDir, now = Date.now, secureCookies = false }) {
   }
 
   const handler = (req, res) => {
-    const path = new URL(req.url, 'http://localhost').pathname;
+    let path;
+    try {
+      path = new URL(req.url, 'http://localhost').pathname;
+    } catch {
+      return sendJson(res, 400, { outcome: 'invalid_url' });
+    }
     route(req, res, path).catch((error) => {
       if (!(error instanceof HttpError)) console.error(`Request failed: ${error.message}`); // never log URLs: tracking links are secrets
       if (!res.headersSent) sendJson(res, error.status ?? 503, { outcome: error.outcome ?? 'service_unavailable' });

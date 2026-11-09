@@ -63,6 +63,25 @@ test('SETUP does not re-add a dish the operator removed', () => {
   removeDataDir(dataDir);
 });
 
+test('RUN a malformed request path is refused and the server keeps serving', async () => {
+  const app = await startApp();
+  try {
+    const { connect } = await import('node:net');
+    const { hostname, port } = new URL(app.base);
+    const reply = await new Promise((resolve, reject) => {
+      const socket = connect(Number(port), hostname, () => socket.write('GET // HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n'));
+      let text = '';
+      socket.on('data', (chunk) => { text += chunk; });
+      socket.on('end', () => resolve(text));
+      socket.on('error', reject);
+    });
+    assert.match(reply, /^HTTP\/1\.1 400/);
+    assert.equal((await fetch(`${app.base}/api/menu`)).status, 200);
+  } finally {
+    await app.stop();
+  }
+});
+
 test('A1 menu API returns the supplied dishes, groups and order', async () => {
   const app = await startApp();
   try {

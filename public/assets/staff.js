@@ -216,7 +216,7 @@ function renderDetail(state) {
   if (!body) return;
   patch(document.getElementById('detail-freshness'), freshness(state));
   const noteEl = document.getElementById('detail-note');
-  patch(noteEl, detailNote ? html`<p class="alert" role="status">${detailNote}</p>` : html``);
+  patch(noteEl, detailNote ? html`<p class="${detailNote.ok ? 'callout' : 'alert'}" role="status">${detailNote.text}</p>` : html``);
 
   if (!state.data) {
     if (state.failed) {
@@ -292,19 +292,19 @@ async function submitChange({ target, revision }, reason) {
   const { outcome } = result.data ?? {};
 
   if (result.status === 200 && outcome === 'changed') {
-    detailNote = `Order marked ${target}.`;
+    detailNote = { ok: true, text: `Order marked ${target}.` };
     if (target === 'Cancelled') {
-      detailNote = 'Order cancelled.';
+      detailNote = { ok: true, text: 'Order cancelled.' };
       drafts.delete(number);
       document.getElementById('cancel-reason').value = '';
       reasonPanelOpen = false;
     }
     coordinator.push(result.data.order);
   } else if (result.status === 409 && outcome === 'conflict') {
-    detailNote = `This order changed before your update was saved. It is now ${result.data.order.status}. Review it, then choose an action if one is still needed.`;
+    detailNote = { text: `This order changed before your update was saved. It is now ${result.data.order.status}. Review it, then choose an action if one is still needed.` };
     coordinator.push(result.data.order);
   } else if (result.status === 422 && outcome === 'invalid') {
-    detailNote = result.data.message;
+    detailNote = { text: result.data.message };
     coordinator.push(result.data.order);
   } else if (result.status === 401) {
     requireSignIn();
@@ -316,9 +316,11 @@ async function submitChange({ target, revision }, reason) {
     await coordinator.refresh();
     if (number !== openNumber) return;
     writing = false;
-    detailNote = coordinator.state.stale
-      ? "We couldn't confirm whether that change was saved, and the latest status isn't available yet. Refresh before choosing an action."
-      : "We couldn't confirm whether that change was saved. The current status is shown below. Review it before choosing an action.";
+    detailNote = {
+      text: coordinator.state.stale
+        ? "We couldn't confirm whether that change was saved, and the latest status isn't available yet. Refresh before choosing an action."
+        : "We couldn't confirm whether that change was saved. The current status is shown below. Review it before choosing an action.",
+    };
     renderDetail(coordinator.state);
   }
   // The button that had focus may be gone now that the status changed.

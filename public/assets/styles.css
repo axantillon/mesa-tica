@@ -95,7 +95,7 @@ button:disabled { background: #e6e0d4; border-color: #e6e0d4; color: #5d564a; cu
 .lines .num { text-align: right; white-space: nowrap; }
 .lines tfoot th, .lines .total { font-weight: 800; border-bottom: 0; }
 .lines tfoot th { text-align: right; }
-.callout { background: #e9f3ee; border-left: 5px solid var(--accent); padding: 10px 12px; border-radius: 6px; }
+.callout { background: #e9f3ee; border-left: 5px solid var(--accent); padding: 10px 12px; border-radius: 6px; overflow-wrap: anywhere; }
 .copy-status { font-weight: 700; color: var(--accent-dark); min-height: 1.5em; }
 .copy-fallback { margin-bottom: 12px; }
 .copy-fallback label { display: block; font-weight: 700; }
