@@ -4,31 +4,35 @@ Executed 2026-11-08: `node --check server.js`, `node --check public/app.js`, and
 
 Additional Playwright WebKit checks on 2026-11-08 used an isolated database and test-only menu controls. They exercised the three worked cart totals; invalid zero, negative, fractional and empty quantities; retained invalid input after another cart edit; cart persistence; price and availability correction; lost accepted response and same-attempt recovery; both staff accounts and an in-progress cancellation conflict; deliberate cancellation and public reason; all queue filters and filter preservation; staff queue stale/recovery; invalid tracking and initial connection failure; Collected guidance; copy feedback; sign-out; and a 375-pixel viewport/keyboard-focus smoke check. A separate isolated server with an injected test clock checked 09:59:59, 10:00:00, 20:59:59 and 21:00:00 Costa Rica time, dated reopening, and a lost acceptance retried after closing. The application itself uses the real clock; test controls were not committed. Playwright tests were run through the CLI on local isolated data; they do not constitute a human usability study.
 
-PASS means the entire criterion was verified; UNRUN includes partial automated evidence, not a claim that the feature is absent. No manual human study, performance, load, production deployment or restore exercise was performed.
+PASS means the entire criterion was verified; UNRUN includes partial automated evidence, not a claim that the feature is absent. No manual human study, representative network performance/load study or production deployment was performed. An isolated stopped-database copy and restore was exercised by the integration test.
 
 | ID | Result | Evidence / remaining verification |
 |---|---|---|
-| SETUP | UNRUN | Fresh setup, two accounts, repeat setup and restart covered by `npm test`; complete setup and history preservation journey needs manual verification. |
+| SETUP | PASS | Isolated setup, empty queue, two distinct logins, repeat setup, stopped-database backup/restore and retained order/history/credentials checked by `npm test`. |
 | A1 | PASS | Supplied menu and unavailable fish inspected; closed browsing and dated reopening checked in WebKit; exact open/close boundaries checked with isolated clock and `npm test`. |
-| A2 | UNRUN | All three worked totals, zero/negative/fractional/empty correction, persistence and explicit removal checked; nonnumeric browser input and all interaction variants remain. |
-| A3 | UNRUN | One valid order and unavailable rejection checked; full invalid and closed cases remain. |
+| A2 | PASS | WebKit checked duplicate adds, three worked totals, zero/negative/fractional/empty and nonnumeric correction, persistence and removal. |
+| A3 | PASS | Isolated tests cover valid guest acceptance, empty, malformed, invalid quantity, unavailable and closed rejections; rejected attempts remain closed. |
 | A3-REVIEW | PASS | WebKit exercised price change, updated total, retained unavailable item, removal and deliberate resubmission. |
-| A4 | UNRUN | Concurrent same-attempt acceptance, durable rejection, lost response, browser recovery and safe retry after closing checked; selection mismatch and all concurrent rejection variants remain. |
-| A5 | UNRUN | Copy feedback, accepted contents, save guidance and empty cart after recovery checked; copy failure and recovered final statuses remain. |
-| B1 | UNRUN | Both sign-ins, sign-out, seven filters, retained terminal orders, filter preservation and automatic changes checked; oldest-first ties and all loading/access states remain. |
-| B1-STALE | UNRUN | WebKit intercepted queue refresh failures and verified stale warning, last check and recovery; session expiry remains. |
-| B2 | UNRUN | Detail and history checked; menu change snapshot test remains. |
-| B3 | UNRUN | WebKit exercised preparing, ready, collected, cancellation confirmation/dismissal and terminal states; all invalid transition and reason variants remain. |
+| A4 | PASS | Isolated tests cover duplicate/concurrent attempts, closed rejection, separate submissions, recovery and 25 dropped accepted responses; WebKit checked retry after closing and a changed retry returning the original selection with a warning. |
+| A5 | PASS | WebKit checked clipboard success and fallback, accepted contents, save guidance, purchased-cart clearing and recovered Cancelled/Collected orders without payment guidance. |
+| B1 | PASS | WebKit checked both staff sign-ins, sign-out, filters, retained terminal orders, filter preservation, automatic updates and loading; isolated equal-time orders verified stable number ordering. |
+| B1-STALE | PASS | WebKit intercepted queue refresh failures and verified stale warning, last check and recovery; revoking the session in another tab returned the open staff view to sign-in and cleared order data. |
+| B2 | PASS | Isolated tests changed menu name and price after acceptance and checked the original detail, total and staff history, including after restore. |
+| B3 | PASS | WebKit exercised lifecycle and cancellation confirmation/dismissal; isolated tests exhaustively reject invalid status edges and blank reasons and check staff-attributed history. |
 | B3-CONFLICT | PASS | Two separate staff contexts competed while a cancellation confirmation remained open; conflict displayed the new state, retained reason and allowed deliberate cancellation. |
-| C1 | UNRUN | Invalid token, initial connection failure and public omission of staff identity checked; independent-device and full capability checks remain. |
+| C1 | PASS | A separate browser context opened the private summary; invalid links and initial connection failure were distinguished, staff identities omitted and staff reads/writes denied. Links use 256-bit random tokens. |
 | C2 | PASS | Playwright WebKit showed the open tracking page update to Ready, preserve its last status and check time offline, and clear the stale warning after reconnecting. |
-| C3 | UNRUN | Received, Ready, Cancelled reason and Collected guidance checked; every instruction and stale variant not independently asserted. |
-| ACCESS | UNRUN | Anonymous staff queue rejected; all bypass and session expiry paths need verification. |
-| EXPERIENCE | UNRUN | A 375-pixel horizontal-overflow and keyboard-focus smoke check passed; full responsive, keyboard and human usability checks remain. |
-| RUN | UNRUN | Browser ordering through Collected and API restart passed; complete journey across a browser restart remains unverified. |
+| C3 | PASS | WebKit checked Received, Preparing, Ready, Cancelled reason/contact and Collected guidance; stale Ready remained visibly warned. |
+| ACCESS | PASS | Anonymous queue, tracking-context staff detail/write and expired-session access were denied; WebKit confirmed the staff view clears on expiry. |
+| EXPERIENCE | UNRUN | WebKit checked 320, 375, 768 and 1280-pixel widths, mobile cart access, keyboard cart editing and staff sign-in/filter focus; exhaustive accessibility review and human usability remain unverified. |
+| RUN | PASS | WebKit completed ordering through Collected and reopened a saved tracking page after a server restart; setup and local run instructions are documented. |
 
-All stated concurrency/load, 100-case reliability/consistency and human-usability targets remain UNRUN. One successful test pair is not a measurement of those targets.
+The isolated `test/reliability.test.js` exercises 100 submission scenarios (25 ordinary, 25 concurrent retries, 25 responses dropped before the body and 25 invalid attempts) and 100 concurrent pairs of competing staff changes; all passed on loopback against one Node process and an isolated SQLite database. The dropped-response cases close the response stream after acceptance headers and recover by the same attempt; a lost response was also simulated in WebKit. These 100 submission cases and 100 conflict pairs passed under those local conditions. Network/load timing and human-usability targets remain UNRUN.
 
 Playwright also exposed unnecessary staff queue DOM replacement on every unchanged poll; the follow-up fix retains the existing controls when the snapshot has not changed, while updating the check time. The staff order could then be opened and advanced in the same test. Other acceptance IDs remain UNRUN until all their listed outcomes are checked.
 
 Follow-up fixes: invalid quantity drafts now remain visible and disable submission across cart edits; closed notices include the next opening date; switching staff filters displays loading instead of briefly presenting the old results. `npm test` includes the opening-boundary regression.
+
+Further review: WebKit held an old staff detail response until after a successful status change and verified that it could not overwrite the new state; a 4.5-second tracking response verified polling does not overlap indefinitely. WebKit also checked a recovered Cancelled order, clipboard failure fallback, rejected-login input retention, session revocation, missing detail and nonnumeric quantity correction. Authentication key derivation now runs asynchronously so sign-in does not synchronously block ordering.
+
+Final browser checks included separately controlled clipboard success and failure, recovered Cancelled and Collected orders, expired sessions, separate-browser tracking, status guidance, a saved link after restart, keyboard cart and staff actions, and viewport widths from 320 to 1280 pixels. Cart edits now update in place to retain focus; the mobile header exposes the cart and total. The server drains requests and checkpoints SQLite on SIGINT/SIGTERM before a stopped-database backup.
