@@ -1,6 +1,8 @@
 // Application services: orchestration between controllers, policies and stores.
 
-import { dateTimeLabel, hoursLabel, isOpen, nextOpening, timeLabel } from './policies.js';
+import { createHash, randomBytes } from 'node:crypto';
+import { allowedActions, dateTimeLabel, hoursLabel, isOpen, nextOpening, timeLabel, validateChange } from './policies.js';
+import { hashPassword, verifyPassword } from './store.js';
 
 export const MAX_QUANTITY = 999;
 
@@ -42,8 +44,18 @@ const canonicalSelection = (selection) => JSON.stringify(
     .sort((a, b) => String(a.itemId).localeCompare(String(b.itemId))),
 );
 
+export const SESSION_MS = 12 * 60 * 60 * 1000;
+const FAILURE_WINDOW_MS = 15 * 60 * 1000;
+const MAX_FAILURES_PER_ACCOUNT = 5;
+const MAX_FAILURES_PER_IP = 20;
+const MAX_TRACKED_FAILURES = 10_000;
+const MAX_CONCURRENT_PASSWORD_CHECKS = 3; // below the libuv pool size, so sign-in floods cannot starve other work
+const UNKNOWN_ACCOUNT_HASH = hashPassword(randomBytes(16).toString('hex'));
+
+const hashToken = (token) => createHash('sha256').update(token).digest('hex');
+
 export function createServices(stores, now) {
-  const { restaurantStore, menuStore, orderStore, transaction } = stores;
+  const { restaurantStore, menuStore, orderStore, identityStore, transaction } = stores;
 
   const publicRestaurant = (r) => ({
     name: r.name,
@@ -165,5 +177,126 @@ export function createServices(stores, now) {
     },
   };
 
-  return { menuService, checkoutService };
+  const trackingService = {
+    /** The public projection of one order: never staff identities, history or internal fields. */
+    getSnapshot(token) {
+      const order = orderStore.findByPrivateLink(token);
+      if (!order) return null;
+      const restaurant = restaurantStore.read();
+      return {
+        number: order.number,
+        submitted: dateTimeLabel(order.submittedAt, restaurant.timezone),
+        status: order.status,
+        items: order.items,
+        total: order.total,
+        guidance: collectionGuidance(order, restaurant),
+        checked: timeLabel(now(), restaurant.timezone),
+      };
+    },
+  };
+
+  function presentDetail(order, restaurant) {
+    return {
+      number: order.number,
+      submitted: dateTimeLabel(order.submittedAt, restaurant.timezone),
+      status: order.status,
+      revision: order.revision,
+      items: order.items,
+      total: order.total,
+      cancellationReason: order.cancellationReason,
+      history: orderStore.readHistory(order.number).map((change) => ({
+        fromStatus: change.fromStatus,
+        toStatus: change.toStatus,
+        employee: change.employee,
+        time: dateTimeLabel(change.at, restaurant.timezone),
+        reason: change.reason,
+      })),
+      allowedActions: allowedActions(order.status),
+      checked: timeLabel(now(), restaurant.timezone),
+    };
+  }
+
+  const orderService = {
+    listQueue(filter) {
+      const { timezone } = restaurantStore.read();
+      return {
+        orders: orderStore.listOrders(filter).map(({ submittedAt, ...row }) => ({ ...row, submitted: dateTimeLabel(submittedAt, timezone) })),
+        checked: timeLabel(now(), timezone),
+      };
+    },
+
+    getDetail(number) {
+      const order = orderStore.readOrder(number);
+      return order ? presentDetail(order, restaurantStore.read()) : null;
+    },
+
+    /** Realizes the design's changeIfCurrent boundary: revision and transition are checked where the write happens. */
+    changeStatus(number, revision, target, reason, employee) {
+      return transaction(() => {
+        const restaurant = restaurantStore.read();
+        const order = orderStore.readOrder(number);
+        if (!order) return { outcome: 'unavailable' };
+        if (order.revision !== revision) return { outcome: 'conflict', order: presentDetail(order, restaurant) };
+        const problem = validateChange(order.status, target, reason);
+        if (problem) return { outcome: 'invalid', message: problem, order: presentDetail(order, restaurant) };
+        orderStore.changeIfCurrent(number, revision, target, reason, employee.id, now());
+        return { outcome: 'changed', order: presentDetail(orderStore.readOrder(number), restaurant) };
+      });
+    },
+  };
+
+  const failedSignIns = new Map(); // key -> { count, resetAt }
+  let passwordChecks = 0;
+
+  const signInKeys = (ip, username) => [
+    { key: `ip:${ip}`, limit: MAX_FAILURES_PER_IP },
+    { key: `account:${ip}|${username}`, limit: MAX_FAILURES_PER_ACCOUNT },
+  ];
+
+  const isLimited = (keys, t) => keys.some(({ key, limit }) => {
+    const entry = failedSignIns.get(key);
+    return entry && entry.resetAt > t && entry.count >= limit;
+  });
+
+  function recordFailure(keys, t) {
+    if (failedSignIns.size > MAX_TRACKED_FAILURES) {
+      for (const [key, entry] of failedSignIns) if (entry.resetAt <= t) failedSignIns.delete(key);
+    }
+    for (const { key } of keys) {
+      const entry = failedSignIns.get(key);
+      if (entry && entry.resetAt > t) entry.count += 1;
+      else failedSignIns.set(key, { count: 1, resetAt: t + FAILURE_WINDOW_MS });
+    }
+  }
+
+  const accessService = {
+    // ponytail: in-memory limiter, per process and cleared on restart; move to the database if the app runs as several processes.
+    async signIn(username, password, ip) {
+      const keys = signInKeys(ip, username);
+      if (isLimited(keys, now()) || passwordChecks >= MAX_CONCURRENT_PASSWORD_CHECKS) return { outcome: 'limited' };
+      passwordChecks += 1;
+      try {
+        const employee = identityStore.findByUsername(username);
+        // An unknown account still costs a full password check, so timing does not reveal it.
+        const matches = await verifyPassword(password, employee?.password_hash ?? UNKNOWN_ACCOUNT_HASH);
+        if (!matches || employee?.authorized !== 1) {
+          recordFailure(keys, now());
+          return { outcome: 'failed' };
+        }
+        const token = randomBytes(32).toString('base64url');
+        identityStore.createSession(hashToken(token), employee.id, now() + SESSION_MS, now());
+        return { outcome: 'signed_in', token, displayName: employee.display_name };
+      } finally {
+        passwordChecks -= 1;
+      }
+    },
+
+    requireStaff: (token) => (token ? identityStore.resolveAccess(hashToken(token), now()) ?? null : null),
+
+    signOut(token) {
+      if (token) identityStore.revokeAccess(hashToken(token));
+    },
+  };
+
+  return { menuService, checkoutService, trackingService, orderService, accessService };
 }

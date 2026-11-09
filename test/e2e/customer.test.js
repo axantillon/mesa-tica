@@ -86,6 +86,8 @@ test('A2 invalid quantities get a correction, keep the row and block submission'
     await totalIs(page, '₡2,600'); // the last valid quantity, never silently changed
     await expect(place(page)).toBeDisabled();
   }
+  await page.evaluate(() => window.dispatchEvent(new StorageEvent('storage', { key: 'unrelated' })));
+  await expect(qty).toHaveAttribute('aria-invalid', 'true'); // survives a full re-render too
   await qty.fill('4');
   await expect(page.locator('#err-D1')).toHaveText('');
   await totalIs(page, '₡5,200');

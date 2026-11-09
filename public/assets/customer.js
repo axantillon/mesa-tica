@@ -214,7 +214,7 @@ function cartView() {
           <button id="dec-${row.id}" class="step" data-action="step" data-id="${row.id}" data-by="-1" aria-label="Decrease quantity of ${row.name}" ${locked || row.unavailable || row.quantity <= 1 ? 'disabled' : ''}>−</button>
           <input id="qty-${row.id}" class="qty" data-id="${row.id}" inputmode="numeric" autocomplete="off"
             value="${row.id in drafts ? drafts[row.id] : row.quantity}" aria-describedby="err-${row.id}"
-            ${rowError(row) ? 'aria-invalid="true"' : ''} ${locked || row.unavailable ? 'disabled' : ''}>
+            ${rowError(row) ? html`aria-invalid="true"` : ''} ${locked || row.unavailable ? 'disabled' : ''}>
           <button id="inc-${row.id}" class="step" data-action="step" data-id="${row.id}" data-by="1" aria-label="Increase quantity of ${row.name}" ${locked || row.unavailable || row.quantity >= MAX_QUANTITY ? 'disabled' : ''}>+</button>
           <button id="remove-${row.id}" class="link-button" data-action="remove" data-id="${row.id}" aria-label="Remove ${row.name}" ${locked ? 'disabled' : ''}>Remove</button>
         </div>

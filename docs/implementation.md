@@ -14,3 +14,4 @@ npm start        # runs the repeatable setup, then serves http://127.0.0.1:3000
 
 1. Runnable foundation: durable storage, repeatable setup, opening rules, menu browsing.
 2. Customer ordering: cart, exactly-once acceptance, uncertain-outcome recovery, confirmation. The "View progress" link has no page until milestone 3.
+3. Staff and tracking integration: sign-in, queue, revision-bound status changes, private tracking, automatic updates with stale handling.

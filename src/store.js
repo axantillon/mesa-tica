@@ -151,7 +151,8 @@ export function openStores(dataDir) {
     provisionEmployee: ({ id, username, displayName }, passwordHash) => db.prepare(
       'INSERT OR IGNORE INTO employees (id, username, display_name, password_hash) VALUES (?, ?, ?, ?)',
     ).run(id, username, displayName, passwordHash).changes === 1,
-    createSession: (tokenHash, employeeId, expiresAt) => {
+    createSession: (tokenHash, employeeId, expiresAt, now) => {
+      db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(now);
       db.prepare('INSERT INTO sessions (token_hash, employee_id, expires_at) VALUES (?, ?, ?)').run(tokenHash, employeeId, expiresAt);
     },
     resolveAccess: (tokenHash, now) => db.prepare(`
@@ -168,6 +169,25 @@ export function openStores(dataDir) {
                                  VALUES (?, ?, ?, ?, ?, ?, ?)`);
   const selectOrder = db.prepare('SELECT * FROM orders WHERE number = ?');
   const selectItems = db.prepare('SELECT name, price, quantity, subtotal FROM order_items WHERE order_number = ? ORDER BY line');
+
+  const selectOrderByToken = db.prepare('SELECT * FROM orders WHERE token = ?');
+  // ponytail: no pagination on All; add when retained orders outgrow one screen's load.
+  const selectQueue = db.prepare(`
+    SELECT o.number, o.submitted_at AS submittedAt, o.status, o.total,
+      (SELECT group_concat(line_text, ', ') FROM
+        (SELECT quantity || ' × ' || name AS line_text FROM order_items WHERE order_number = o.number ORDER BY line)) AS summary
+    FROM orders o
+    WHERE o.status IN (SELECT value FROM json_each(?))
+    ORDER BY o.submitted_at, o.number`);
+  const selectHistory = db.prepare(`
+    SELECT c.from_status AS fromStatus, c.to_status AS toStatus, e.display_name AS employee, c.at, c.reason
+    FROM status_changes c JOIN employees e ON e.id = c.employee_id
+    WHERE c.order_number = ? ORDER BY c.id`);
+  const updateStatus = db.prepare(`
+    UPDATE orders SET status = ?, cancellation_reason = ?, revision = revision + 1
+    WHERE number = ? AND revision = ?`);
+  const insertChange = db.prepare(`
+    INSERT INTO status_changes (order_number, from_status, to_status, employee_id, at, reason) VALUES (?, ?, ?, ?, ?, ?)`);
 
   const hydrate = (row) => row && {
     number: row.number,
@@ -199,6 +219,17 @@ export function openStores(dataDir) {
       return number;
     },
     readOrder: (number) => hydrate(selectOrder.get(number)),
+    findByPrivateLink: (token) => hydrate(selectOrderByToken.get(token)),
+    listOrders: (filter) => selectQueue.all(JSON.stringify(FILTERS[filter])).map((row) => ({ ...row })),
+    readHistory: (number) => selectHistory.all(number).map((row) => ({ ...row })),
+    /** Saves status and employee/time history together, only from the observed revision. Call inside a transaction. */
+    changeIfCurrent(number, revision, target, reason, employeeId, at) {
+      const fromStatus = selectOrder.get(number).status;
+      const reasonToStore = target === 'Cancelled' ? reason.trim() : null;
+      if (updateStatus.run(target, reasonToStore, number, revision).changes !== 1) return false;
+      insertChange.run(number, fromStatus, target, employeeId, at, reasonToStore);
+      return true;
+    },
   };
 
   return { db, transaction, restaurantStore, menuStore, orderStore, identityStore, close: () => db.close() };

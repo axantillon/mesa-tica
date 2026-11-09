@@ -100,3 +100,50 @@ button:disabled { background: #e6e0d4; border-color: #e6e0d4; color: #5d564a; cu
 .copy-fallback { margin-bottom: 12px; }
 .copy-fallback label { display: block; font-weight: 700; }
 .copy-fallback input { width: 100%; height: 46px; padding: 0 8px; font: inherit; border: 2px solid var(--muted); border-radius: var(--radius); }
+
+/* Staff and tracking */
+.page-wide { max-width: 980px; }
+.stack { display: grid; gap: 6px; max-width: 360px; }
+.stack label { font-weight: 700; }
+.stack input { height: 46px; padding: 0 10px; font: inherit; border: 2px solid var(--muted); border-radius: var(--radius); background: var(--surface); color: var(--ink); }
+.stack button { margin-top: 12px; }
+.staff-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.staff-bar .button { margin-left: auto; }
+.bar-note { font-weight: 700; color: var(--danger); }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.filter { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 2px solid var(--line); border-radius: 99px; background: var(--surface); color: var(--ink); text-decoration: none; font-weight: 600; }
+.filter[aria-current="page"] { background: var(--accent-dark); border-color: var(--accent-dark); color: var(--accent-ink); }
+.queue { list-style: none; margin: 0; padding: 0; }
+.queue-row { display: grid; grid-template-columns: 90px 120px 1fr 90px; grid-template-areas: "num status time total" "summary summary summary summary"; gap: 4px 12px; align-items: center; padding: 12px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); text-decoration: none; }
+.queue-row:hover { border-color: var(--accent); }
+.queue-number { grid-area: num; font-size: 1.25rem; font-weight: 800; }
+.queue-row .status-pill { grid-area: status; justify-self: start; }
+.queue-time { grid-area: time; color: var(--muted); }
+.queue-total { grid-area: total; text-align: right; font-weight: 700; }
+.queue-summary { grid-area: summary; }
+.empty { padding: 28px 12px; text-align: center; color: var(--muted); font-size: 1.1rem; }
+.back { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
+.history { margin: 0; padding-left: 20px; }
+.history li { margin-bottom: 4px; }
+.reason-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-top: 12px; }
+.reason-panel textarea { width: 100%; padding: 10px; font: inherit; border: 2px solid var(--muted); border-radius: var(--radius); }
+.button-danger { background: var(--danger); border-color: var(--danger); }
+.button-danger:hover { background: #7f2015; border-color: #7f2015; }
+.button-danger-quiet { background: var(--surface); color: var(--danger); border-color: var(--danger); }
+.button-danger-quiet:hover { background: #fbeae7; color: var(--danger); border-color: var(--danger); }
+dialog { width: min(480px, calc(100vw - 32px)); padding: 20px; border: 0; border-radius: var(--radius); color: var(--ink); }
+dialog::backdrop { background: rgb(30 27 22 / .55); }
+dialog h2 { margin-top: 0; }
+blockquote { margin: 8px 0; padding: 8px 12px; background: var(--bg); border-left: 4px solid var(--line); overflow-wrap: anywhere; }
+.callout-stop { background: #fbeae7; border-left-color: var(--danger); }
+.order-number-inline { font-size: 1.5em; }
+.status-card { background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius); padding: 14px; margin: 10px 0 14px; }
+.status-label { margin: 0; font-size: .9rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.status-name { margin: 0; font-size: 2rem; font-weight: 800; line-height: 1.2; }
+.status-message { margin: 4px 0 0; font-size: 1.1rem; }
+.track .callout p:last-child { margin-bottom: 0; }
+
+@media (max-width: 560px) {
+  .queue-row { grid-template-columns: 1fr auto; grid-template-areas: "num status" "time total" "summary summary"; }
+  .lines th, .lines td { padding: 8px 6px; }
+}

@@ -21,7 +21,7 @@ export function patch(el, template) {
   rendered.set(el, template.raw);
   const focused = el.contains(document.activeElement) ? document.activeElement.id : null;
   el.innerHTML = template.raw;
-  if (focused) document.getElementById(focused)?.focus();
+  if (focused !== null) (document.getElementById(focused) ?? (el.hasAttribute('tabindex') ? el : null))?.focus();
 }
 
 export const money = (amount) => `₡${amount.toLocaleString('en-US')}`;
@@ -54,6 +54,83 @@ export async function api(path, { method = 'GET', body, timeoutMs = 8000 } = {})
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * UpdateCoordinator: keeps one target current by polling (roughly every 2 s, with a 3 s timeout).
+ * A check only counts when a successful response arrives; failures keep the last data and mark it
+ * stale; older responses are ignored; staff writes never pass through here, so none are repeated.
+ *
+ * target: { path, onChange({ data, checked, stale, failed }), onDenied(), onGone(), isOlder?(next, shown) }
+ */
+export function createUpdateCoordinator() {
+  const POLL_MS = 2000;
+  const TIMEOUT_MS = 3000;
+  let target = null;
+  let timer = null;
+  let requests = 0;
+  let appliedRequest = 0;
+  let state = null;
+
+  const publish = (changes) => {
+    state = { ...state, ...changes };
+    target.onChange(state);
+  };
+
+  async function refresh() {
+    const current = target;
+    if (!current) return;
+    clearTimeout(timer);
+    const request = ++requests;
+    const result = await api(current.path, { timeoutMs: TIMEOUT_MS });
+    if (current !== target || request < appliedRequest) return;
+
+    if (result.status === 401 && result.data?.outcome === 'sign_in_required') {
+      stop();
+      current.onDenied();
+      return;
+    }
+    if (result.status === 404 && ['link_unavailable', 'unavailable'].includes(result.data?.outcome)) {
+      stop();
+      current.onGone();
+      return;
+    }
+    if (result.status === 200) {
+      if (!state.data || !current.isOlder?.(result.data, state.data)) {
+        appliedRequest = request;
+        publish({ data: result.data, checked: result.data.checked, stale: false, failed: false });
+      }
+    } else {
+      publish(state.data ? { stale: true } : { failed: true });
+    }
+    clearTimeout(timer);
+    timer = setTimeout(refresh, POLL_MS);
+  }
+
+  function stop() {
+    target = null;
+    clearTimeout(timer);
+  }
+
+  function observe(next) {
+    stop();
+    target = next;
+    state = { data: null, checked: null, stale: false, failed: false };
+    appliedRequest = requests;
+    refresh();
+  }
+
+  /** Applies data already known to be current (a write's response), superseding requests in flight. */
+  function push(data) {
+    appliedRequest = ++requests;
+    publish({ data, checked: data.checked, stale: false, failed: false });
+  }
+
+  const recover = () => (target ? refresh() : Promise.resolve());
+  window.addEventListener('online', recover);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) recover(); });
+
+  return { observe, refresh: recover, recover, push, stop, get state() { return state; } };
 }
 
 /** JSON in browser storage; survives blocked or full storage by keeping working in memory. */
