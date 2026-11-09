@@ -21,15 +21,16 @@ export function withApp(options, fn) {
   const { viewport = PHONE, at, permissions } = options;
   return async () => {
     const app = await startApp({ at });
-    const context = await browser.newContext({ viewport, permissions });
-    const page = await context.newPage();
-    const problems = [];
-    page.on('pageerror', (error) => problems.push(error.message));
+    let context;
     try {
+      context = await browser.newContext({ viewport, permissions });
+      const page = await context.newPage();
+      const problems = [];
+      page.on('pageerror', (error) => problems.push(error.message));
       await fn({ app, page, context, problems });
       assert.deepEqual(problems, [], 'page raised errors');
     } finally {
-      await context.close();
+      await context?.close();
       await app.stop();
     }
   };

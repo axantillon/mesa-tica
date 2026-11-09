@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { expect } from 'playwright/test';
 import { costaRica } from '../harness.js';
-import { addDishes, body, closeBrowser, launchBrowser, openCart, orderCount, withApp, WORKED } from './support.js';
+import { addDishes, body, BROWSER, closeBrowser, launchBrowser, openCart, orderCount, withApp, WORKED } from './support.js';
 
 before(launchBrowser);
 after(closeBrowser);
@@ -97,7 +97,7 @@ test('A2 invalid quantities get a correction, keep the row and block submission'
 test('A2 typing keeps focus while totals update, and steppers work', withApp({}, async ({ app, page }) => {
   await addDishes(page, app, [['Iced tea']]);
   await openCart(page);
-  await page.locator('#qty-D2').click();
+  await page.locator('#qty-D2').selectText();
   await page.keyboard.press('Backspace');
   await page.keyboard.type('12');
   await expect(page.locator('#qty-D2')).toBeFocused();
@@ -125,7 +125,9 @@ test('A2 the cart survives a reload in the same browser', withApp({}, async ({ a
   await expect(page.locator('#cart-link')).toContainText('₡7,900');
 }));
 
-test('A3/A5 a guest places an order without personal details and sees the confirmation', withApp({ permissions: ['clipboard-read', 'clipboard-write'] }, async ({ app, page }) => {
+const clipboardAccess = BROWSER === 'chromium' ? ['clipboard-read', 'clipboard-write'] : undefined; // WebKit has no such permissions
+
+test('A3/A5 a guest places an order without personal details and sees the confirmation', withApp({ permissions: clipboardAccess }, async ({ app, page }) => {
   await addDishes(page, app, WORKED);
   await openCart(page);
   assert.equal(await page.locator('input:not(.qty), textarea, select').count(), 0, 'no personal-information fields');
@@ -142,8 +144,10 @@ test('A3/A5 a guest places an order without personal details and sees the confir
   assert.equal(orderCount(app), 1);
   await page.getByRole('button', { name: 'Copy tracking link' }).click();
   await expect(page.locator('#copy-status')).toHaveText('Link copied');
-  const copied = await page.evaluate(() => navigator.clipboard.readText());
-  assert.match(copied, /\/track\/[\w-]{43}$/);
+  if (BROWSER === 'chromium') {
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    assert.match(copied, /\/track\/[\w-]{43}$/);
+  }
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Order received' })).toBeVisible();
   await page.getByRole('button', { name: 'Start a new order' }).click();
