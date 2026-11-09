@@ -19,8 +19,9 @@ const json = (body, cookie) => ({ method: 'POST', headers: { 'Content-Type': 'ap
 const percentile = (values, p) => [...values].sort((a, b) => a - b)[Math.ceil((p / 100) * values.length) - 1];
 const round = (n) => Math.round(n);
 function report(name, values, targetMs) {
-  const p95 = percentile(values, 95);
-  console.log(`${name}: n=${values.length} p50=${round(percentile(values, 50))}ms p95=${round(p95)}ms max=${round(Math.max(...values))}ms (target p95 <= ${targetMs}ms: ${p95 <= targetMs ? 'met locally' : 'NOT met'})`);
+  const p95 = percentile(values, 95); // a failed load counts as Infinity, so failures count against the target
+  const finished = values.filter(Number.isFinite);
+  console.log(`${name}: n=${values.length} failed=${values.length - finished.length} p50=${round(percentile(values, 50))}ms p95=${round(p95)}ms max=${round(Math.max(...finished))}ms (target p95 <= ${targetMs}ms: ${p95 <= targetMs ? 'met locally' : 'NOT met'})`);
 }
 
 const dataDir = freshDataDir();
@@ -64,16 +65,32 @@ async function signIn(username) {
 }
 const change = (cookie, number, revision, target) => post(`/api/staff/orders/${number}/status`, { revision, target }, cookie);
 
-async function timedLoad(paths, headers) {
+/** Fetches each stage in order, as a browser does: page, then its assets, then its data. Infinity on any failure. */
+async function timedLoad(stages, headers) {
   const started = performance.now();
-  await Promise.all(paths.map((path) => fetch(base + path, { headers }).then((r) => r.arrayBuffer())));
-  return performance.now() - started;
+  try {
+    for (const stage of stages) {
+      await Promise.all(stage.map(async (path) => {
+        const response = await fetch(base + path, { headers });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        await response.arrayBuffer();
+      }));
+    }
+    return performance.now() - started;
+  } catch {
+    return Infinity;
+  }
 }
 
+/** Sessions arrive within a short ramp; hundreds of connects in one instant overflow the OS accept queue. */
 async function concurrentLoads(sessions, rounds, load) {
+  const RAMP_MS = 500;
   const times = [];
   for (let i = 0; i < rounds; i++) {
-    times.push(...await Promise.all(Array.from({ length: sessions }, load)));
+    times.push(...await Promise.all(Array.from({ length: sessions }, async () => {
+      await sleep(Math.random() * RAMP_MS);
+      return load();
+    })));
   }
   return times;
 }
@@ -107,8 +124,8 @@ function createPoller(path, cookie) {
 }
 
 async function measureMenu() {
-  const files = ['/', '/assets/styles.css', '/assets/shared.js', '/assets/customer.js', '/api/menu'];
-  report('Menu load, 100 concurrent sessions x 10 rounds', await concurrentLoads(100, 10, () => timedLoad(files)), 2000);
+  const stages = [['/'], ['/assets/styles.css', '/assets/customer.js'], ['/assets/shared.js'], ['/api/menu']];
+  report('Menu load, 100 concurrent sessions x 10 rounds', await concurrentLoads(100, 10, () => timedLoad(stages)), 2000);
 }
 
 async function measureQueue() {
@@ -116,8 +133,8 @@ async function measureQueue() {
   const luis = await signIn('luis');
   const cookies = [luis];
   for (let i = 1; i < 10; i++) cookies.push(await signIn(i % 2 ? 'elena' : 'luis'));
-  const files = ['/staff', '/assets/styles.css', '/assets/shared.js', '/assets/staff.js'];
-  const load = () => timedLoad([...files, '/api/staff/orders?filter=Active'], { cookie: cookies[Math.floor(Math.random() * 10)] });
+  const stages = [['/staff'], ['/assets/styles.css', '/assets/staff.js'], ['/assets/shared.js'], ['/api/staff/session'], ['/api/staff/orders?filter=Active']];
+  const load = () => timedLoad(stages, { cookie: cookies[Math.floor(Math.random() * 10)] });
   report('Queue load, 10 sessions, 200 active orders x 20 rounds', await concurrentLoads(10, 20, load), 2000);
 
   const pollers = cookies.map((cookie) => createPoller('/api/staff/orders?filter=Active', cookie));
@@ -227,7 +244,7 @@ async function measureConflicts() {
 async function measureSignInFlood() {
   const times = [];
   const flood = Promise.all(Array.from({ length: 18 }, (_, i) => post('/api/staff/signin', { username: `nobody${i}`, password: 'wrong' })));
-  for (let i = 0; i < 40; i++) times.push(await timedLoad(['/api/menu']));
+  for (let i = 0; i < 40; i++) times.push(await timedLoad([['/api/menu']]));
   await flood;
   report('Menu API while sign-in checks run', times, 2000);
 }
