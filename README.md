@@ -17,3 +17,7 @@ Pickup ordering for one restaurant. Guests browse the menu, place an order and f
 The specification governs business rules; the restaurant/menu document supplies concrete content. Stories and experience guidance explain the product. The architecture, detailed design and sequences define the logical responsibilities that realize it. In a minor ambiguity, preserve the specification's behavior and make a practical choice. Quality targets require measurement and are not a prerequisite for beginning implementation.
 
 Rendered design: [diagram gallery](design/diagram-gallery.md) · [detailed class views](design/class-views.md).
+
+## Round 3
+
+Round 3 starts from the shared product and design context, not an earlier generated application. See [evidence-backed implementation notes](docs/round3-implementation-notes.md) for outcome requirements drawn from the Round 2 comparison. Use [KICKOFF.md](KICKOFF.md) as the exact implementation prompt. Keep diagrams and product context stable during a generation round; incorporate design changes through reviewable diagram PRs before beginning any subsequent round.
