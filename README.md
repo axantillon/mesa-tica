@@ -20,4 +20,4 @@ Rendered design: [diagram gallery](design/diagram-gallery.md) · [detailed class
 
 ## Round 3
 
-Round 3 starts from the shared product and design context, not an earlier generated application. See [evidence-backed implementation notes](docs/round3-implementation-notes.md) for outcome requirements drawn from the Round 2 comparison. Use [KICKOFF.md](KICKOFF.md) as the exact implementation prompt. Keep diagrams and product context stable during a generation round; incorporate design changes through reviewable diagram PRs before beginning any subsequent round.
+Round 3 starts from the shared product and design context, not an earlier generated application. Use [KICKOFF.md](KICKOFF.md) as the exact implementation prompt. Keep diagrams and product context stable during a generation round; incorporate design changes through reviewable diagram PRs before beginning any subsequent round.
