@@ -48,3 +48,7 @@ cp data/mesa.sqlite /path/to/private-backups/mesa.sqlite
 To restore, stop the application, preserve the current database if needed, replace `data/mesa.sqlite` with the chosen backup, then run `npm run setup` and `npm start`. Ensure no `mesa.sqlite-wal` or `mesa.sqlite-shm` from a different database is left beside the restored file; do not replace files while the server is running. The integration test exercises a stopped-database copy and restore in a temporary directory. Production backups require an environment-specific, protected, tested procedure.
 
 The browser keeps cart edits in place for keyboard focus and presents a cart link and total at mobile widths. Staff and tracking polls run one request at a time per view; a staff write invalidates any older pending read. Authentication key derivation is asynchronous. Replaying an accepted attempt with a changed selection returns the original order with an explicit warning.
+
+Unchanged tracking snapshots update their check time without rebuilding the entire live region. Automated accessibility checks and keyboard/responsive evidence are documented in `docs/verification.md`; representative assistive-technology and human-user evaluations remain future work.
+
+If staff access expires mid-action, reauthentication reopens the affected detail with the cancellation draft retained; an explicit sign-out clears that draft and returns the next sign-in to the Active queue.
