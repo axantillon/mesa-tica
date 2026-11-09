@@ -81,4 +81,4 @@ An early version of the measurement opened 500 connections in the same instant a
 - WebKit coverage is Playwright's desktop WebKit at phone width, not iOS Safari on a device.
 - Firefox, screen readers and physical phones were not tested.
 - The accessibility scan finds only automatically detectable issues, and it ran on Chromium.
-- GitHub: no `origin` remote exists in this repository, so nothing was pushed and no draft PR was opened.
+- Every check above ran locally on one machine; none ran in CI.

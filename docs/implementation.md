@@ -219,4 +219,4 @@ classDiagram
 5. `85ed047`, `4254b24`, `c697d3c` Test-only fixes: WebKit portability, per-test timeouts, measurements that follow browser load order and count failures, and the stale-warning check for Cancelled orders.
 6. Final commit on this branch: implementation records, namely this document, verification results, backlog and pull-request description.
 
-GitHub: no `origin` remote is configured in this repository, so nothing was pushed and no draft PR exists. A ready-to-use description is in [pull-request.md](pull-request.md).
+GitHub: this branch is pushed to `axantillon/mesa-tica` with draft PR [#9](https://github.com/axantillon/mesa-tica/pull/9). Its description is kept in [pull-request.md](pull-request.md).

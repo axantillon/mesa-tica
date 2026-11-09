@@ -1,6 +1,6 @@
 # Draft pull request description
 
-No `origin` remote is configured in this repository, so no branch was pushed and no PR was created. Use the text below for a draft PR from `implementation/round2-anthropic` into `main`.
+The text below is the description of draft PR [#9](https://github.com/axantillon/mesa-tica/pull/9), from `implementation/round2-anthropic` into `main`.
 
 ---
 
@@ -36,8 +36,8 @@ Not done: live deployment, human usability studies, real-network performance, sc
 
 ## Documentation
 
-- [Implementation: architecture, setup, sign-in, design mapping, decisions](implementation.md)
-- [Verification results for each acceptance ID](verification.md)
-- [Backlog](backlog.md)
+- [Implementation: architecture, setup, sign-in, design mapping, decisions](https://github.com/axantillon/mesa-tica/blob/implementation/round2-anthropic/docs/implementation.md)
+- [Verification results for each acceptance ID](https://github.com/axantillon/mesa-tica/blob/implementation/round2-anthropic/docs/verification.md)
+- [Backlog](https://github.com/axantillon/mesa-tica/blob/implementation/round2-anthropic/docs/backlog.md)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
