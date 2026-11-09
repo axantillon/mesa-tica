@@ -121,6 +121,10 @@ test('C3 Cancelled shows the exact reason and labeled demo contact, and the link
   assert.ok(!(await body(page).innerText()).includes('pay at collection'));
   await page.reload();
   await expect(statusName(page)).toHaveText('Cancelled');
+  await page.route('**/api/track/*', (route) => route.abort());
+  await expect(warning(page)).toBeVisible({ timeout: 8000 });
+  await expect(statusName(page)).toHaveText('Cancelled');
+  await expect(page.getByText('<b>Out</b> of chicken & rice')).toBeVisible();
 }));
 
 test('RUN the whole journey in one go: order on a phone, manage on a tablet, track live', withApp({}, async ({ app, page, context }) => {
