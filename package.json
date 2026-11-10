@@ -10,6 +10,7 @@
   "scripts": {
     "setup": "node --disable-warning=ExperimentalWarning src/setup.js",
     "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "staff:reset-password": "node --disable-warning=ExperimentalWarning src/reset-password.js",
     "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 \"test/**/*.test.js\"",
     "test:browser": "NODE_OPTIONS=--disable-warning=ExperimentalWarning playwright test",
     "test:all": "npm test && npm run test:browser"

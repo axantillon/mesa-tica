@@ -174,6 +174,36 @@ test('two server processes sharing one database still accept each submission onc
   db.close();
 });
 
+test('the explicit password reset command replaces one password, ends its sessions and keeps history', async () => {
+  const dataDir = makeDataDir('mesa-reset-');
+  const app = await startTestServer({ dataDir });
+  const oldPassword = app.credentials.luis;
+  const cookie = await signIn(app.url, 'luis', oldPassword);
+  const { data } = await placeOrder(app.url);
+  await api(app.url, `/api/staff/orders/${data.confirmation.orderNumber}/status`, { method: 'POST', cookie, body: { revision: 1, target: 'Preparing' } });
+  const elenaHash = app.db.prepare("SELECT password_hash FROM employees WHERE username = 'elena'").get().password_hash;
+
+  const result = await new Promise((resolve) => {
+    const child = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', path.join(projectRoot, 'src', 'reset-password.js'), 'luis'], {
+      env: { ...process.env, MESA_DATA_DIR: dataDir },
+    });
+    let output = '';
+    child.stdout.on('data', (chunk) => (output += chunk));
+    child.on('exit', (code) => resolve({ code, output }));
+  });
+  assert.equal(result.code, 0);
+  const newPassword = readCredentials(dataDir).luis;
+  assert.notEqual(newPassword, oldPassword);
+  assert.doesNotMatch(result.output, new RegExp(newPassword));
+  assert.equal((await api(app.url, '/api/staff/orders', { cookie })).status, 401, 'existing sessions end');
+  assert.equal((await api(app.url, '/api/staff/session', { method: 'POST', body: { username: 'luis', password: oldPassword } })).status, 401);
+  const fresh = await signIn(app.url, 'luis', newPassword);
+  const detail = await api(app.url, `/api/staff/orders/${data.confirmation.orderNumber}`, { cookie: fresh });
+  assert.equal(detail.data.order.history[0].employeeName, 'Luis');
+  assert.equal(app.db.prepare("SELECT password_hash FROM employees WHERE username = 'elena'").get().password_hash, elenaHash);
+  await app.close();
+});
+
 test('HTTPS deployments can require Secure session cookies through configuration', async () => {
   const app = await startTestServer({ env: { MESA_SECURE_COOKIES: 'true' } });
   const response = await api(app.url, '/api/staff/session', { method: 'POST', body: { username: 'luis', password: app.credentials.luis } });

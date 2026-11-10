@@ -31,6 +31,8 @@ export function createAccessService({ identityStore, sessionTtlMinutes, now = ()
   }
 
   function recordFailure(keys, at) {
+    // Drop expired entries once the map grows, so guessed usernames cannot grow memory without bound.
+    if (failures.size > 10_000) for (const key of failures.keys()) activeFailures(key, at);
     for (const key of keys) {
       const entry = activeFailures(key, at) ?? { count: 0, resetAt: at + WINDOW_MS };
       entry.count += 1;
