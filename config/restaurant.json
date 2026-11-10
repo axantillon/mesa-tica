@@ -1,0 +1,39 @@
+{
+  "restaurant": {
+    "name": "Mesa Tica",
+    "descriptor": "Pickup ordering",
+    "timezone": "America/Costa_Rica",
+    "timezoneLabel": "Costa Rica time",
+    "currency": "CRC",
+    "weeklyHours": {
+      "monday": [{ "open": "10:00", "close": "21:00" }],
+      "tuesday": [{ "open": "10:00", "close": "21:00" }],
+      "wednesday": [{ "open": "10:00", "close": "21:00" }],
+      "thursday": [{ "open": "10:00", "close": "21:00" }],
+      "friday": [{ "open": "10:00", "close": "21:00" }],
+      "saturday": [{ "open": "10:00", "close": "21:00" }],
+      "sunday": [{ "open": "10:00", "close": "21:00" }]
+    },
+    "pickupLocation": "Mesa Tica pickup counter",
+    "pickupInstructions": "Collect at the Mesa Tica pickup counter. Show your order number and pay at collection.",
+    "contact": "demo-contact@example.invalid",
+    "contactLabel": "Demo contact — not monitored",
+    "customerNote": "Pickup only. Pay at collection. Keep your tracking link private.",
+    "demoNotice": "Fictional demo restaurant. Not a real operating business."
+  },
+  "menu": [
+    { "code": "M1", "group": "Meals", "name": "Chicken casado", "description": "Rice, beans, chicken, salad and plantain.", "price": 4500, "available": true },
+    { "code": "M2", "group": "Meals", "name": "Vegetarian casado", "description": "Rice, beans, vegetables, salad and plantain.", "price": 4000, "available": true },
+    { "code": "M3", "group": "Meals", "name": "Fish casado", "description": "Rice, beans, fish and salad.", "price": 5000, "available": false },
+    { "code": "S1", "group": "Sides", "name": "Beef empanada", "description": "Corn pastry filled with seasoned beef.", "price": 1500, "available": true },
+    { "code": "S2", "group": "Sides", "name": "Cheese empanada", "description": "Corn pastry filled with cheese.", "price": 1400, "available": true },
+    { "code": "S3", "group": "Sides", "name": "Garden salad", "description": "Lettuce, tomato and cucumber.", "price": 2500, "available": true },
+    { "code": "S4", "group": "Sides", "name": "Plantain side", "description": "Sweet fried plantain.", "price": 1200, "available": true },
+    { "code": "D1", "group": "Drinks", "name": "Horchata", "description": "Rice drink, 350 mL.", "price": 1300, "available": true },
+    { "code": "D2", "group": "Drinks", "name": "Iced tea", "description": "Unsweetened tea, 350 mL.", "price": 1000, "available": true }
+  ],
+  "staff": [
+    { "username": "luis", "displayName": "Luis" },
+    { "username": "elena", "displayName": "Elena" }
+  ]
+}

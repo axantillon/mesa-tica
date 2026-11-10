@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mesa Tica · Pickup ordering</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+    <script type="module" src="/assets/customer.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap">
+        <p class="brand"><span class="brand-name">Mesa Tica</span> <span class="brand-descriptor">Pickup ordering</span></p>
+        <div id="restaurant-info" aria-live="polite"></div>
+      </div>
+    </header>
+    <main id="main" class="wrap" tabindex="-1">
+      <div id="customer-notices"></div>
+      <div id="menu-view">
+        <section aria-labelledby="menu-heading" class="menu">
+          <h1 id="menu-heading">Menu</h1>
+          <div id="menu-content"><p class="loading" role="status">Loading the menu…</p></div>
+        </section>
+        <section id="cart" aria-labelledby="cart-heading" class="cart panel" tabindex="-1">
+          <h2 id="cart-heading">Your cart</h2>
+          <div id="cart-content"></div>
+        </section>
+      </div>
+      <section id="confirmation-view" aria-labelledby="confirmation-heading" hidden></section>
+    </main>
+    <a id="cart-bar" class="cart-bar" href="#cart" hidden></a>
+    <footer class="site-footer wrap"><p id="demo-notice">Fictional demo restaurant. Not a real operating business.</p></footer>
+  </body>
+</html>
