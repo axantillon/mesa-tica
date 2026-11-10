@@ -1,6 +1,6 @@
 # Prepared draft PR update
 
-Destination: existing draft https://github.com/axantillon/mesa-tica/pull/10, `implementation/round3-openai` → `main`. Final update/comment were not posted because automatic approval review rejected the external progress upload; no workaround was used after the second rejection. Final local work remains available for review and publication when approved.
+Destination: existing draft https://github.com/axantillon/mesa-tica/pull/10, `implementation/round3-openai` → `main`. Automatic review initially blocked the final progress upload. After the user explicitly authorized publication with “push”, final source commit `46acb78` was pushed and this description and final progress comment were posted successfully. The PR remains open and in draft.
 
 ## Title
 
