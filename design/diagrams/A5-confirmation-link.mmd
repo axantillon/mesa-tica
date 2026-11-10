@@ -4,6 +4,7 @@ sequenceDiagram
     actor Customer
     participant UI as CustomerView
     participant Cart as Cart
+    participant Tracking as TrackingView
     Note over Customer,UI: Begins only with a known acceptance result from A3 or A4. No new order is submitted here.
     UI->>UI: showConfirmation(confirmation)
     alt Status Received
@@ -13,8 +14,15 @@ sequenceDiagram
     else Recovered order was cancelled
     UI-->>Customer: Same number and items/total, this order was cancelled, view progress for the reason and contact under C3, no invitation to collect or pay
     end
-    UI->>Cart: clearPurchased(selection)
+    UI->>UI: retainConfirmation(confirmation)
+    alt Browser storage available
+    UI->>UI: Save known acceptance and private link before clearing pending recovery
     UI->>UI: clearPending()
+    else Browser storage unavailable
+    UI->>UI: Keep pending recovery information if confirmation could not be saved
+    UI-->>Customer: Keep this confirmation open, copy or bookmark link before leaving
+    end
+    UI->>Cart: clearPurchased(selection)
     UI-->>Customer: View progress and save/bookmark instructions, keep link private
     Customer->>UI: Copy tracking link
     UI->>UI: copyTrackingLink()
@@ -22,5 +30,10 @@ sequenceDiagram
     UI-->>Customer: Link copied feedback
     else Copy unavailable
     UI-->>Customer: Selectable private link and manual-copy instructions
+    end
+    opt Reload or return to same tab with saved confirmation
+    UI->>UI: restoreConfirmation()
+    UI->>Tracking: Open saved private link, no submission
+    Note over Customer,Tracking: C1/C2 retrieve current progress, cached status is last known, failures retain link and stale warning
     end
     Note over Customer,UI: A recovered order keeps its original identity and accepted contents. Do not reset its current status. C1 defines opening the saved link.

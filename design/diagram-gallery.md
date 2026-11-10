@@ -183,6 +183,10 @@ flowchart TB
     Updates -->|"Current private snapshot"| CController
     Stores --> Durable
     Setup --> Stores
+    Boundary["Request boundaries<br/>Validate representation and values, preserve access checks,<br/>distinguish client errors from service failure"]
+    Boundary -.-> AControllers
+    Boundary -.-> BControllers
+    Boundary -.-> CController
 ```
 
 ## A1-menu
@@ -350,13 +354,20 @@ sequenceDiagram
     Customer->>UI: Check order
     UI->>C: recover(context, attempt)
     C->>S: recover(context, attempt)
-    S->>O: findAccepted(context, attempt)
+    S->>O: readAttemptOutcome(context, attempt)
     alt Acceptance found
     O-->>S: Original order, including after closing
     S->>S: buildConfirmation(order)
     S-->>C: Original accepted result
     C-->>UI: Confirmation for A5
     UI-->>Customer: Original order found
+    else Definitive rejection already recorded
+    O-->>S: Closed attempt and original correction
+    S-->>C: Definitive rejection and correction
+    C-->>UI: Correction, not an uncertain outcome
+    UI->>UI: clearPending()
+    UI->>Cart: applyCorrection(correction)
+    UI-->>Customer: Keep cart, explain correction, deliberate corrected submit starts a new attempt
     else Acceptance not established
     O-->>S: No accepted record, outcome remains uncertain
     S-->>C: Unresolved
@@ -397,6 +408,7 @@ sequenceDiagram
     actor Customer
     participant UI as CustomerView
     participant Cart as Cart
+    participant Tracking as TrackingView
     Note over Customer,UI: Begins only with a known acceptance result from A3 or A4. No new order is submitted here.
     UI->>UI: showConfirmation(confirmation)
     alt Status Received
@@ -406,8 +418,15 @@ sequenceDiagram
     else Recovered order was cancelled
     UI-->>Customer: Same number and items/total, this order was cancelled, view progress for the reason and contact under C3, no invitation to collect or pay
     end
-    UI->>Cart: clearPurchased(selection)
+    UI->>UI: retainConfirmation(confirmation)
+    alt Browser storage available
+    UI->>UI: Save known acceptance and private link before clearing pending recovery
     UI->>UI: clearPending()
+    else Browser storage unavailable
+    UI->>UI: Keep pending recovery information if confirmation could not be saved
+    UI-->>Customer: Keep this confirmation open, copy or bookmark link before leaving
+    end
+    UI->>Cart: clearPurchased(selection)
     UI-->>Customer: View progress and save/bookmark instructions, keep link private
     Customer->>UI: Copy tracking link
     UI->>UI: copyTrackingLink()
@@ -415,6 +434,11 @@ sequenceDiagram
     UI-->>Customer: Link copied feedback
     else Copy unavailable
     UI-->>Customer: Selectable private link and manual-copy instructions
+    end
+    opt Reload or return to same tab with saved confirmation
+    UI->>UI: restoreConfirmation()
+    UI->>Tracking: Open saved private link, no submission
+    Note over Customer,Tracking: C1/C2 retrieve current progress, cached status is last known, failures retain link and stale warning
     end
     Note over Customer,UI: A recovered order keeps its original identity and accepted contents. Do not reset its current status. C1 defines opening the saved link.
 ```
@@ -618,6 +642,8 @@ sequenceDiagram
     alt Access denied
     Access-->>C: Denial
     C-->>UI: No change, sign-in or access guidance
+    UI-->>Employee: Hide protected detail and retain same-order cancellation draft
+    Note over Employee,UI: Reauthenticate through B1, then fetch current detail through B2. Restore the draft only for this order and require a new deliberate action. Never resend automatically.
     else Authorized
     Access-->>C: Employee
     C->>S: changeStatus(number, revision, target, reason, employee)
@@ -821,6 +847,7 @@ sequenceDiagram
     Run->>I: provisionEmployee(profile, credentials)
     I-->>Run: Staff account available, existing credentials unchanged
     end
-    Run-->>Operator: Local run and sign-in instructions
+    Run-->>Operator: Local run, sign-in and configurable hosting/storage instructions
+    Note over Operator,Run: Choose address, port, durable storage and HTTPS session settings without source edits. Local run needs no hosted account. Verify restart with configured storage, a listener check is not live deployment.
     Note over Operator,I: Initial setup creates no customer orders. Repeated setup preserves orders and history. Use isolated test data to exercise open, closed and changed-menu cases. Normal ordering always applies configured hours.
 ```

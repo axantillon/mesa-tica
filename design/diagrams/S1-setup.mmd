@@ -16,5 +16,6 @@ sequenceDiagram
     Run->>I: provisionEmployee(profile, credentials)
     I-->>Run: Staff account available, existing credentials unchanged
     end
-    Run-->>Operator: Local run and sign-in instructions
+    Run-->>Operator: Local run, sign-in and configurable hosting/storage instructions
+    Note over Operator,Run: Choose address, port, durable storage and HTTPS session settings without source edits. Local run needs no hosted account. Verify restart with configured storage, a listener check is not live deployment.
     Note over Operator,I: Initial setup creates no customer orders. Repeated setup preserves orders and history. Use isolated test data to exercise open, closed and changed-menu cases. Normal ordering always applies configured hours.
