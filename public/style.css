@@ -13,7 +13,7 @@ header { max-width: 1240px; padding: 1.5rem 2rem; margin: auto; display: flex; a
 .brand { font-family: Georgia, serif; font-size: 1.75rem; font-weight: bold; text-decoration: none; line-height: 1.15; }
 .brand span { display: block; font: .75rem/1.8 -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: .06em; color: var(--muted); font-weight: 500; }
 nav { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
-nav a { font-size: .9rem; }
+nav a { font-size: .9rem; min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
 main { max-width: 1160px; margin: auto; padding: 2rem; min-height: 65vh; }
 footer { max-width: 1160px; margin: 3rem auto 0; padding: 1.5rem 2rem; border-top: 1px solid var(--line); font-size: .8rem; color: var(--muted); }
 h1,h2,h3,p { margin: 0 0 .8rem; }
@@ -28,7 +28,8 @@ small { font-size: .85rem; }
 .panel { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.4rem; }
 .cart-panel { position: sticky; top: 1rem; }
 .category { margin-bottom: 2rem; scroll-margin-top: 1rem; }
-.dish { padding: 1.1rem 0; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 1rem; }
+.dish { padding: 1.1rem 0; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 1rem; }
+.dish > div { flex: 1 1 180px; min-width: 0; }
 .dish p { color: var(--muted); font-size: .9rem; margin-bottom: .6rem; }
 .dish.unavailable { color: var(--muted); }
 .dish button { align-self: center; }
@@ -62,8 +63,8 @@ input[readonly] { width: 100%; font-size: .85rem; }
 .history li { margin: .8rem 0; }
 dialog { border: 1px solid var(--line); border-radius: 14px; max-width: min(520px, calc(100% - 2rem)); padding: 1.6rem; color: inherit; }
 dialog::backdrop { background: #172c24aa; }
-.skip { position: fixed; top: -100px; left: 1rem; background: white; padding: 1rem; z-index: 10; }
-.skip:focus { top: 1rem; }
+.skip { position: fixed; top: 1rem; left: 1rem; background: white; padding: 1rem; z-index: 10; opacity: 0; transform: translateY(-200%); pointer-events: none; }
+.skip:focus { opacity: 1; transform: none; pointer-events: auto; }
 .announcer { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 [hidden] { display: none !important; }
 @media (max-width: 800px) { .layout { grid-template-columns: 1fr; gap: 1rem; } .cart-panel { position: static; } header, main { padding: 1.2rem; } header { align-items: flex-start; } nav { gap: .5rem 1rem; justify-content: flex-end; } .brand { font-size: 1.5rem; } }

@@ -9,6 +9,7 @@ let actionRevision;
 let actionButton;
 let checkedAt;
 let lastActions = '';
+let routeGeneration = 0;
 let filter = readStorage('sessionStorage', 'mesa-filter', 'Active');
 const allFilters = ['Active', 'Received', 'Preparing', 'Ready', 'Collected', 'Cancelled', 'All'];
 if (!allFilters.includes(filter)) filter = 'Active';
@@ -114,6 +115,13 @@ function detail(number) {
   const dismiss = () => { $('dialog').close(); actionRevision = null; actionButton?.focus(); };
   $('#dismiss-cancel').onclick = dismiss;
   $('dialog').addEventListener('cancel', event => { event.preventDefault(); dismiss(); });
+  $('dialog').addEventListener('keydown', event => {
+    if (event.key !== 'Tab') return;
+    const first = $('#dismiss-cancel');
+    const last = $('#confirm-cancel');
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  });
   $('#confirm-cancel').onclick = () => {
     const revision = actionRevision;
     const reason = $('#reason').value;
@@ -145,15 +153,17 @@ async function change(number, revision, target, reason) {
   observer = observe(() => api(`/api/staff/orders/${number}`), showDetail, failedRead);
 }
 async function route() {
+  const generation = ++routeGeneration;
   observer?.stop();
   current = null;
   checkedAt = null;
   try {
     await api('/api/staff/session');
+    if (generation !== routeGeneration) return;
     $('#sign-out').hidden = false;
     const number = orderNumber();
     number ? detail(number) : queue();
-  } catch (error) { accessLost(error.status === 401 ? '' : 'Staff access could not be checked. Check your connection and sign in again.'); }
+  } catch (error) { if (generation === routeGeneration) accessLost(error.status === 401 ? '' : 'Staff access could not be checked. Check your connection and sign in again.'); }
 }
 $('#sign-out').onclick = async () => {
   try {

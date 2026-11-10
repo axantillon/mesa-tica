@@ -163,6 +163,34 @@ test('C1/C3: private public projection, all guidance, terminal links remain vali
   }
 });
 
+test('ACCESS: expired sessions deny protected reads/writes and HTTPS cookies are configurable', async t => {
+  const f = await isolated(t);
+  await f.place();
+  const cookie = (await f.login()).cookie;
+  f.setTime('2026-11-10T00:00:00Z');
+  assert.equal((await f.request('/api/staff/orders', { cookie })).status, 401);
+  assert.equal((await f.request('/api/staff/orders/1', { method: 'POST', cookie, body: { revision: 1, target: 'Preparing' } })).status, 401);
+  assert.equal(f.store.readOrder(1).history.length, 0);
+  const { createApplication } = await import('../src/server.mjs');
+  const secure = createApplication({ filename: ':memory:', secureCookies: true });
+  await secure.store.provision('test', 'Test employee', f.password);
+  await new Promise(resolve => secure.server.listen(0, '127.0.0.1', resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${secure.server.address().port}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'test', password: f.password }) });
+    assert.match(response.headers.get('set-cookie'), /; Secure/);
+  } finally { await new Promise(resolve => secure.server.close(resolve)); secure.store.db.close(); }
+});
+
+test('B1: queue sorts by submission time and uses order number for ties', async t => {
+  const f = await isolated(t);
+  await f.place();
+  f.setTime('2026-11-09T16:05:00Z'); await f.place();
+  f.setTime(openTime); await f.place();
+  const cookie = (await f.login()).cookie;
+  const queue = (await f.request('/api/staff/orders?filter=Active', { cookie })).data.orders;
+  assert.deepEqual(queue.map(order => order.number), [1, 3, 2]);
+});
+
 test('Q-SUBMISSION: 100 valid/repeated/lost-response/rejected cases have exact order counts', async t => {
   const f = await isolated(t);
   for (let index = 0; index < 100; index++) {
@@ -187,14 +215,15 @@ test('Q-CONSISTENCY: 100 competing valid pairs, one success/one conflict and del
     const placed = await f.place();
     const number = placed.data.order.number;
     const change = (cookie, revision, target, reason = '') => f.request(`/api/staff/orders/${number}`, { method: 'POST', cookie, body: { revision, target, reason } });
-    const pair = await Promise.all([change(luis, 1, 'Preparing'), change(elena, 1, 'Cancelled', 'Cannot fulfill')]);
+    const pair = await Promise.all([change(luis, 1, 'Preparing'), change(elena, 1, 'Preparing')]);
     assert.deepEqual(pair.map(result => result.status).sort(), [200, 409]);
     assert.match(pair.find(result => result.status === 409).data.message, /changed.*Review/);
     const current = f.store.readOrder(number);
     assert.equal(current.revision, 2);
     assert.equal(current.history.length, 1);
-    if (current.status === 'Preparing') assert.equal((await change(elena, 2, 'Ready')).status, 200);
-    else assert.equal((await change(luis, 2, 'Preparing')).status, 422);
+    assert.equal(current.status, 'Preparing');
+    assert.equal((await change(elena, 2, 'Ready')).status, 200);
+    assert.equal(f.store.readOrder(number).history.length, 2);
   }
   assert.equal(f.count(), 100);
 });

@@ -81,7 +81,8 @@ export function createApplication({ filename = process.env.DATA_PATH || 'var/mes
         const number = Number(match[1]);
         if (method === 'GET') return send(200, { order: store.detail(number), checkedAt: now().toISOString() });
         if (!Number.isSafeInteger(body.revision) || typeof body.target !== 'string') throw new ClientError(400, 'Choose an action from the current order.');
-        return send(200, { order: store.change(number, body.revision, body.target, body.reason, employee, now()), checkedAt: now().toISOString() });
+        const currentEmployee = store.requireStaff(cookie(request), now());
+        return send(200, { order: store.change(number, body.revision, body.target, body.reason, currentEmployee, now()), checkedAt: now().toISOString() });
       }
       const assets = { '/': 'index.html', '/track': 'index.html', '/staff': 'staff.html', '/app.js': 'app.js', '/staff.js': 'staff.js', '/shared.js': 'shared.js', '/style.css': 'style.css' };
       if (method === 'GET' && assets[path]) {

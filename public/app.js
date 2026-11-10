@@ -8,6 +8,7 @@ let busy = false;
 let correction = '';
 let storageFailed = false;
 let observer;
+let routeGeneration = 0;
 const main = $('#main');
 
 function save() {
@@ -30,15 +31,15 @@ function cartMarkup() {
       <small>Subtotal <span data-subtotal="${escape(item.id)}">${validQuantity(item.quantity) ? money(Number(item.quantity) * item.price) : '—'}</span></small></div>`).join('') : '<p>Your cart is empty. Choose a dish from the menu.</p>'}
     <div class="row total"><span>Total</span><span id="cart-total">${money(total())}</span></div>
     <p><small>Your selection is not a reservation. Prices and availability are checked when you order.</small></p>
-    ${pending ? `<div class="notice" role="alert">We couldn't confirm the result. Check this order before placing another.</div><div class="stack"><button id="check-order" ${busy ? 'disabled' : ''}>Check order</button><button id="retry-order" class="secondary" ${busy ? 'disabled' : ''}>Retry safely</button></div>` : `<button id="place-order" ${!menu?.opening.isOpen || !state.cart.length || invalid || busy ? 'disabled' : ''}>${busy ? 'Placing your order…' : 'Place pickup order'}</button>`}
-    ${!menu?.opening.isOpen ? `<p class="notice">${escape(menu?.opening.message || 'Opening information unavailable. Please retry.')}</p>` : ''}
+    ${pending ? `<div class="notice" role="${busy ? 'status' : 'alert'}">${busy ? 'Checking your order… Please wait for confirmation.' : "We couldn't confirm the result. Check this order before placing another."}</div><div class="stack"><button id="check-order" ${busy ? 'disabled' : ''}>Check order</button><button id="retry-order" class="secondary" ${busy ? 'disabled' : ''}>Retry safely</button></div>` : `<button id="place-order" ${!menu?.opening.isOpen || !state.cart.length || invalid || busy ? 'disabled' : ''}>${busy ? 'Placing your order…' : 'Place pickup order'}</button>`}
+    <p id="cart-opening" class="notice" ${menu?.opening.isOpen ? 'hidden' : ''}>${escape(menu?.opening.message || 'Opening information unavailable. Please retry.')}</p>
     ${storageFailed ? '<p class="notice">Browser saving is unavailable. Keep this page open during ordering and save your tracking link before leaving.</p>' : ''}`;
 }
 function renderMenu() {
   observer?.stop();
-  main.innerHTML = `<section class="intro"><p class="eyebrow">Fresh from the kitchen</p><h1>A good meal.<br>A simple pickup.</h1><p>Choose your favorites, place your order, and follow its progress.</p><span class="status">${menu.opening.isOpen ? 'Open for pickup' : 'Ordering closed'}</span><p class="muted">Every day, 10:00 AM–9:00 PM · Costa Rica time<br>Pickup only. Pay at collection. Keep your tracking link private.</p>${!menu.opening.isOpen ? `<p class="notice">${escape(menu.opening.message)}</p>` : ''}</section>
+  main.innerHTML = `<section class="intro"><p class="eyebrow">Fresh from the kitchen</p><h1>A good meal.<br>A simple pickup.</h1><p>Choose your favorites, place your order, and follow its progress.</p><span class="status" id="opening-state">${menu.opening.isOpen ? 'Open for pickup' : 'Ordering closed'}</span><p class="muted">Every day, 10:00 AM–9:00 PM · Costa Rica time<br>Pickup only. Pay at collection. Keep your tracking link private.</p><p class="notice" id="menu-opening" ${menu.opening.isOpen ? 'hidden' : ''}>${escape(menu.opening.message)}</p></section>
     ${state.confirmation ? '<p><a class="button secondary" href="/#confirmation">Return to your last order</a></p>' : ''}
-    <div class="layout"><section id="menu" aria-label="Menu">${menu.items.length ? ['Meals', 'Sides', 'Drinks'].map(group => `<section class="category"><h2>${group}</h2>${menu.items.filter(item => item.group === group).map(item => `<article class="dish ${item.available ? '' : 'unavailable'}"><div><h3>${escape(item.name)}</h3><p>${escape(item.description)}</p><span class="price">${money(item.price)}</span>${item.available ? '' : ' · Unavailable'}</div><button class="secondary" data-add="${item.id}" ${!item.available || state.pending ? 'disabled' : ''} aria-label="Add ${escape(item.name)}">${item.available ? 'Add +' : 'Unavailable'}</button></article>`).join('')}</section>`).join('') : '<div class="notice">The menu is empty. Ordering is unavailable. Please check the demo contact.</div>'}</section><aside id="cart" class="panel cart-panel" aria-label="Your cart">${cartMarkup()}</aside></div>`;
+    <div class="layout"><section id="menu" aria-label="Menu">${menu.items.length ? ['Meals', 'Sides', 'Drinks'].map(group => `<section class="category"><h2>${group}</h2>${menu.items.filter(item => item.group === group).map(item => `<article class="dish ${item.available ? '' : 'unavailable'}"><div><h3>${escape(item.name)}</h3><p>${escape(item.description)}</p><span class="price">${money(item.price)}</span>${item.available ? '' : ' · Unavailable'}</div><button class="secondary" data-add="${item.id}" ${!item.available || state.pending ? 'disabled' : ''} aria-label="${item.available ? `Add ${escape(item.name)}` : `${escape(item.name)} unavailable`}">${item.available ? 'Add +' : 'Unavailable'}</button></article>`).join('')}</section>`).join('') : '<div class="notice">The menu is empty. Ordering is unavailable. Please check the demo contact.</div>'}</section><aside id="cart" class="panel cart-panel" aria-label="Your cart">${cartMarkup()}</aside></div>`;
   count();
   main.onclick = event => {
     const add = event.target.closest('[data-add]');
@@ -123,7 +124,7 @@ function renderTracking(privateKey, cached, confirmation) {
   observer?.stop();
   main.onclick = null;
   const link = `${location.origin}/track#${privateKey}`;
-  main.innerHTML = `<section class="summary"><p class="eyebrow">${confirmation ? 'Your pickup order' : 'Order progress'}</p><h1>${confirmation ? 'Order received' : 'Follow your order'}</h1><div id="freshness" role="status">${cached ? 'Last known information — checking current status…' : 'Loading current order…'}</div><div id="order-summary">${cached ? `<div class="panel">${summary(cached)}<p>${escape(cached.guidance)}</p></div>` : ''}</div><section class="panel"><h2>Keep your private link</h2><p>Save this link or bookmark the tracking page so you can check your order later. Anyone with this link can view this order.</p><label for="tracking-link">Private tracking link</label><input id="tracking-link" readonly value="${escape(link)}"><div class="actions"><button id="copy-link">Copy tracking link</button><a class="button secondary" href="${escape(link)}">View progress</a></div><p id="copy-feedback" role="status"></p><p id="storage-warning" class="notice" ${storageFailed ? '' : 'hidden'}>Save this tracking link before leaving this page. Browser saving is unavailable.</p><small>Changes or cancellation are handled by restaurant staff. There are no customer edit or cancel controls.</small></section><a href="/#menu">Back to menu / start a new order</a></section>`;
+  main.innerHTML = `<section class="summary"><p class="eyebrow">${confirmation ? 'Your pickup order' : 'Order progress'}</p><h1>${confirmation ? (cached && cached.status !== 'Received' ? `Order ${escape(cached.status.toLowerCase())}` : 'Order received') : 'Follow your order'}</h1><div id="freshness" role="status">${cached ? 'Last known information — checking current status…' : 'Loading current order…'}</div><div id="order-summary">${cached ? `<div class="panel">${summary(cached)}<p>${escape(cached.guidance)}</p></div>` : ''}</div><section class="panel"><h2>Keep your private link</h2><p>Save this link or bookmark the tracking page so you can check your order later. Anyone with this link can view this order.</p><label for="tracking-link">Private tracking link</label><input id="tracking-link" readonly value="${escape(link)}"><div class="actions"><button id="copy-link">Copy tracking link</button><a class="button secondary" href="${escape(link)}">View progress</a></div><p id="copy-feedback" role="status"></p><p id="storage-warning" class="notice" ${storageFailed ? '' : 'hidden'}>Save this tracking link before leaving this page. Browser saving is unavailable.</p><small>Changes or cancellation are handled by restaurant staff. There are no customer edit or cancel controls.</small></section><a href="/#menu">Back to menu / start a new order</a></section>`;
   $('#copy-link').onclick = async () => {
     try { await navigator.clipboard.writeText(link); $('#copy-feedback').textContent = 'Link copied.'; }
     catch { $('#tracking-link').focus(); $('#tracking-link').select(); $('#copy-feedback').textContent = 'Copy unavailable. Select and copy the link above manually.'; }
@@ -132,6 +133,7 @@ function renderTracking(privateKey, cached, confirmation) {
   let last = cached;
   observer = observe(() => api(`/api/tracking/${encodeURIComponent(privateKey)}`), result => {
     checkedAt = result.checkedAt;
+    if (last?.status !== result.order.status) announce(`Order ${result.order.number}: ${result.order.status}. ${result.order.guidance}`);
     last = result.order;
     if (confirmation && state.confirmation) {
       state.confirmation.order = result.order;
@@ -151,12 +153,15 @@ function renderTracking(privateKey, cached, confirmation) {
   });
 }
 async function route() {
+  const generation = ++routeGeneration;
   observer?.stop();
   count();
   if (location.pathname === '/track') return renderTracking(location.hash.slice(1), null, false);
   if (location.hash === '#confirmation' && state.confirmation) return renderTracking(state.confirmation.privateKey, state.confirmation.order, true);
   try {
-    menu = await api('/api/menu');
+    const loaded = await api('/api/menu');
+    if (generation !== routeGeneration) return;
+    menu = loaded;
     // On return the server supplies current review values, but correction still requires an explicit submit.
     const changes = [];
     for (const row of state.cart) {
@@ -166,17 +171,25 @@ async function route() {
     }
     if (changes.length) correction = changes.join(' ');
     save(); renderMenu();
-  } catch { main.innerHTML = '<h1>Menu unavailable</h1><p role="alert">We could not load the menu. Your saved selection is retained. Check your connection and reload.</p><button id="reload-menu">Try again</button>'; $('#reload-menu').onclick = route; }
+  } catch { if (generation !== routeGeneration) return; main.innerHTML = '<h1>Menu unavailable</h1><p role="alert">We could not load the menu. Your saved selection is retained. Check your connection and reload.</p><button id="reload-menu">Try again</button>'; $('#reload-menu').onclick = route; }
 }
 window.addEventListener('hashchange', route);
 window.addEventListener('pageshow', event => { if (event.persisted) route(); });
-if (location.pathname === '/' && !location.hash && state.confirmation) location.hash = 'confirmation';
+if (location.pathname === '/' && !location.hash && state.confirmation && !state.pending) location.hash = 'confirmation';
 else route();
 // Keep opening information current without rebuilding inputs or moving focus.
 setInterval(async () => {
   if (!$('#cart') || !menu) return;
   try {
     const fresh = await api('/api/menu');
-    if (fresh.opening.isOpen !== menu.opening.isOpen) { menu = fresh; updateCart(); }
+    menu.opening = fresh.opening;
+    $('#opening-state').textContent = fresh.opening.isOpen ? 'Open for pickup' : 'Ordering closed';
+    for (const selector of ['#cart-opening', '#menu-opening']) {
+      const notice = $(selector);
+      notice.hidden = fresh.opening.isOpen;
+      notice.textContent = fresh.opening.message;
+    }
+    const submitButton = $('#place-order');
+    if (submitButton) submitButton.disabled = !fresh.opening.isOpen || !state.cart.length || busy || state.cart.some(item => !validQuantity(item.quantity) || item.unavailable);
   } catch { /* Acceptance always checks real server time. */ }
 }, 10000);
