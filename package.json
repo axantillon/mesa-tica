@@ -14,5 +14,7 @@
     "test:browser": "playwright test",
     "test:all": "npm test && npm run test:browser"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
 }

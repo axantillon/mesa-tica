@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="mesa-refresh-ms" content="%REFRESH_INTERVAL_MS%" />
+    <title>Staff · Mesa Tica</title>
+    <link rel="stylesheet" href="/assets/app.css" />
+    <script type="module" src="/assets/staff.js"></script>
+  </head>
+  <body class="staff">
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap staff-header">
+        <p class="brand"><span class="brand-name">Mesa Tica</span> <span class="brand-descriptor">Staff orders</span></p>
+        <div id="staff-account"></div>
+      </div>
+    </header>
+    <main id="main" class="wrap" tabindex="-1">
+      <div id="session-check"><p class="loading" role="status">Checking your staff session…</p></div>
+      <section id="signin-view" class="panel signin" aria-labelledby="signin-heading" hidden>
+        <h1 id="signin-heading">Staff sign-in</h1>
+        <div id="signin-message"></div>
+        <form id="signin-form" novalidate>
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required />
+          <button id="signin-button" type="submit" class="button primary">Sign in</button>
+        </form>
+      </section>
+      <div id="workspace" hidden></div>
+    </main>
+    <dialog id="cancel-dialog" aria-labelledby="cancel-dialog-title" aria-describedby="cancel-dialog-text">
+      <h2 id="cancel-dialog-title">Cancel order?</h2>
+      <p id="cancel-dialog-text">The customer will see this reason:</p>
+      <blockquote id="cancel-dialog-reason"></blockquote>
+      <p>Cancelled is final: the order can't be reopened.</p>
+      <div class="button-row">
+        <button id="cancel-dialog-keep" type="button" class="button secondary">Keep order</button>
+        <button id="cancel-dialog-confirm" type="button" class="button danger">Yes, cancel order</button>
+      </div>
+    </dialog>
+  </body>
+</html>
