@@ -501,6 +501,9 @@ input.invalid,
   font-weight: 700;
   font-size: 1.15rem;
 }
+.order-card .status {
+  justify-self: start;
+}
 .order-card-items {
   grid-column: 1 / -1;
 }
