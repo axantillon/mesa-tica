@@ -53,5 +53,8 @@ Product/design documents are unchanged.
    consecutive runs; 59/59 node checks. Fixed a stretched status badge and repeated dialog wording found in screenshots.
 4. **Documentation and final state.** Implementation, verification and backlog docs; added
    `npm run staff:reset-password` with a test. Final run: 60/60 node, 37/37 browser. Remaining items as listed above.
+5. **Clean-checkout verification.** Fresh clone of `9eb642f` + `npm ci`: `npm test` 60/60, `npm run test:browser`
+   37/37, working tree unchanged afterwards. Implementation complete for local operation; outcome and limitations as
+   summarized above.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

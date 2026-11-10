@@ -287,4 +287,5 @@ menu prices/availability, weekly hours and sessions only through that harness.
 | `cf12e0a` | Runnable backend foundation: stores, policies, services, controllers, setup, server entry. |
 | `b5641cd` | Customer, tracking and staff views; unit and API checks (browser UI not yet verified at that commit). |
 | `f13931b` | Playwright browser suite (37 journeys) and small staff layout fixes. |
-| (this commit) | Implementation, verification and backlog documentation; local PR description. |
+| `9eb642f` | Implementation, verification and backlog documentation; local PR description; staff password reset command. |
+| (next commit) | Clean-checkout verification record. |

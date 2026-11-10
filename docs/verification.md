@@ -9,6 +9,8 @@ are not real-user validation, and local loopback runs are not network, load or h
   Chromium revision 1243 (headless), emulated Pixel 7 ("phone") and Desktop Chrome ("desktop") profiles.
 - `npm test` → **60 passed, 0 failed** (node:test: 15 unit + 45 API/process checks, ~3.2 s).
 - `npm run test:browser` → **37 passed, 0 failed** (~25 s, 4 workers).
+- Clean-checkout rerun: `git clone` of commit `9eb642f` into an empty directory, `npm ci`, `npm test` → 60/60,
+  `npm run test:browser` → 37/37; `git status` stayed clean (test output is git-ignored).
 - The browser suite had also passed in full twice in a row before the final documentation changes (37/37 each);
   no flaky or contradictory outcome has been observed so far. During development, failures were test-authoring
   mistakes (ambiguous locators, a hidden button counted, a default parameter hiding an anonymous request) and were
