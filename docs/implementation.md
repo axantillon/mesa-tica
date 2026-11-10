@@ -57,3 +57,4 @@ Current official Apple HIG [accessibility](https://developer.apple.com/design/hu
 ## Milestones
 
 1. Foundation: persistent schema, safe setup, policies, transactional services, guarded HTTP controllers and accessible page shell. `npm run setup` succeeds; server syntax passes. Customer/staff behavior and full verification still in progress.
+2. Customer ordering: menu/cart, exact totals and quantity corrections, durable attempt recovery, confirmation restoration and private tracking UI. Syntax checks pass. Browser verification remains in progress. Draft PR: https://github.com/axantillon/mesa-tica/pull/10.
