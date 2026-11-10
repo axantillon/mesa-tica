@@ -1,0 +1,14 @@
+{
+  "name": "mesa-tica",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": {
+    "setup": "node src/setup.mjs",
+    "start": "node src/server.mjs",
+    "test": "node --test tests/service.test.mjs",
+    "test:browser": "playwright test",
+    "check": "node --check src/server.mjs && node --check public/app.js && node --check public/staff.js"
+  }
+}
