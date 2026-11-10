@@ -16,13 +16,20 @@ sequenceDiagram
     Customer->>UI: Check order
     UI->>C: recover(context, attempt)
     C->>S: recover(context, attempt)
-    S->>O: findAccepted(context, attempt)
+    S->>O: readAttemptOutcome(context, attempt)
     alt Acceptance found
     O-->>S: Original order, including after closing
     S->>S: buildConfirmation(order)
     S-->>C: Original accepted result
     C-->>UI: Confirmation for A5
     UI-->>Customer: Original order found
+    else Definitive rejection already recorded
+    O-->>S: Closed attempt and original correction
+    S-->>C: Definitive rejection and correction
+    C-->>UI: Correction, not an uncertain outcome
+    UI->>UI: clearPending()
+    UI->>Cart: applyCorrection(correction)
+    UI-->>Customer: Keep cart, explain correction, deliberate corrected submit starts a new attempt
     else Acceptance not established
     O-->>S: No accepted record, outcome remains uncertain
     S-->>C: Unresolved

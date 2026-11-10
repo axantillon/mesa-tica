@@ -11,6 +11,7 @@ classDiagram
         <<boundary>>
         +Cart cart
         +SubmissionIdentity pendingAttempt
+        +Confirmation savedConfirmation
         +showMenu(menu)
         +editQuantity(item, quantity)
         +removeItem(item)
@@ -20,6 +21,8 @@ classDiagram
         +clearPending()
         +recoverPending()
         +showConfirmation(confirmation)
+        +retainConfirmation(confirmation)
+        +restoreConfirmation()
         +copyTrackingLink()
     }
     class StaffView {
@@ -85,6 +88,7 @@ classDiagram
     class TrackingService
     CustomerView --> MenuController
     CustomerView --> OrderController
+    CustomerView --> TrackingView : restore private-link access
     StaffView --> AuthController
     StaffView --> StaffOrderController
     StaffView --> OrderFilter
@@ -101,7 +105,8 @@ classDiagram
     TrackingController --> TrackingService
     CustomerView "1" --> "1" Cart
     CustomerView "1" --> "0..1" SubmissionIdentity : pending attempt
-    note for StaffView "Use the revision of the detail shown when the employee chooses an action.<br/>Keep it fixed during confirmation, then advance to the newest detail after<br/>dismissal or a known outcome."
+    note for CustomerView "Retain known acceptance and its private link before clearing pending<br/>recovery data. Restore same-tab access without a new submission; C1/C2<br/>fetch current progress. Cached status stays last known until checked.<br/>If storage is unavailable, keep confirmation and manual save usable."
+    note for StaffView "Use the revision of the detail shown when the employee chooses an action.<br/>Keep it fixed during confirmation, then advance to the newest detail after<br/>dismissal or a known outcome. Retain a same-order reason through<br/>reauthentication, then fetch current state before another deliberate action."
     note for UpdateCoordinator "Ignore older responses. Preserve input and filter, record successful checks<br/>only and recover current information before clearing a stale warning.<br/>Timeouts are failures. Transport and scheduling are implementation choices.<br/>Never automatically repeat a rejected or uncertain staff write."
 ```
 
@@ -173,7 +178,7 @@ classDiagram
     SetupRunner --> IdentityStore
     note for CheckoutService "Validate the reviewed selection for useful corrections. The acceptance<br/>boundary rechecks current prices, availability and hours. Never authorize<br/>unreviewed changes."
     note for AccessService "All staff reads/writes require current authorized identity, including<br/>requests bypassing visible UI. In staff calls, context is the signed-in<br/>staff session. Limit excessive sign-in attempts with generic retry guidance<br/>that does not reveal account existence. Keep routine ordering responsive<br/>during sign-in checks. Choose the protection and credential mechanisms<br/>during implementation."
-    note for SetupRunner "Documented, noninteractive and safe to repeat. Loads the supplied<br/>restaurant and menu only if absent, never resets existing passwords and<br/>never deletes orders. The implementation chooses when and how setup runs."
+    note for SetupRunner "Documented, noninteractive and safe to repeat. Loads the supplied<br/>restaurant and menu only if absent, never resets existing passwords and<br/>never deletes orders. Runtime address, port, durable storage and HTTPS session settings are<br/>configurable without source edits. The implementation chooses mechanisms."
 ```
 
 ## Persistence handlers
@@ -194,6 +199,7 @@ classDiagram
     class OrderStore {
         <<handler>>
         +findAccepted(context, attempt)
+        +readAttemptOutcome(context, attempt)
         +acceptOnce(context, attempt, selection, proposal)
         +resolveRejectedAttempt(context, attempt)
         +issuePrivateLink()
@@ -270,6 +276,7 @@ classDiagram
         +CustomerContext customerContext
         +CartItemList selection
         +AttemptOutcome outcome
+        +Correction rejectionCorrection
     }
     class Order {
         <<entity>>
@@ -343,7 +350,7 @@ classDiagram
     Employee "1" --> "0..*" StatusChange
     SubmissionIdentity "1" --> "0..1" Order : accepted attempt
     Confirmation --> Order : summarizes
-    note for SubmissionIdentity "One customer attempt is bound to its reviewed selection and retained for<br/>same-browser recovery. Its outcome is pending, accepted or closed. A<br/>known rejection closes it; correction starts a new attempt. An absent<br/>acceptance is not proof of rejection. Do not expose another order."
+    note for SubmissionIdentity "One customer attempt is bound to its reviewed selection and retained for<br/>same-browser recovery. Its outcome is pending, accepted or closed. A<br/>known rejection closes it and recovery returns its correction; correction<br/>starts a new attempt. An absent<br/>acceptance is not proof of rejection. Do not expose another order."
     note for Order "Accepted contents and totals are immutable. Revision is an opaque<br/>observed-state marker, not a prescribed database field type. OrderNumber is<br/>short and human-readable for pickup, and grants no online access.<br/>PrivateLink is random with at least 128 bits of entropy, issued once with<br/>the order and never regenerated on retry. It grants read access only to<br/>this order."
     note for Money "Exact monetary meaning, not a prescribed numeric storage representation.<br/>Other named types denote product values or collections, not extra mandatory<br/>runtime classes."
     note for OrderFilter "Active is the default: Received, Preparing and Ready. Each status filter<br/>shows that status. All shows every retained order."

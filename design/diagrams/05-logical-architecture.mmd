@@ -39,3 +39,7 @@ flowchart TB
     Updates -->|"Current private snapshot"| CController
     Stores --> Durable
     Setup --> Stores
+    Boundary["Request boundaries<br/>Validate representation and values, preserve access checks,<br/>distinguish client errors from service failure"]
+    Boundary -.-> AControllers
+    Boundary -.-> BControllers
+    Boundary -.-> CController

@@ -8,7 +8,7 @@
 | A2 | As a customer, I want to review and edit my cart so it contains the items and quantities I intend to buy. | Positive whole-number quantities, explicit removal, corrected invalid input and recalculated total. |
 | A3 | As a customer, I want to place my reviewed pickup order so the restaurant can prepare the meal I chose. | Current prices/availability and opening time are checked. Corrections retain the cart. One accepted submission creates one Received order with its accepted contents, number and private tracking link. |
 | A4 | As a customer, I want to recover an order attempt when confirmation is missing so I do not accidentally place a second order. | Check or safely retry the same attempt, recover its original acceptance even after closing, distinguish rejection from an unknown outcome and never create a duplicate. |
-| A5 | As a customer, I want to keep the confirmation and tracking link so I can return to check my order later. | Show accepted number/items/total and payment instructions, provide copy feedback/manual fallback and save/privacy guidance, and empty the purchased cart after known acceptance. |
+| A5 | As a customer, I want to keep the confirmation and tracking link so I can return to check my order later. | Show accepted number/items/total and payment instructions, provide copy feedback/manual fallback and save/privacy guidance, retain access after same-tab reload with a current-status check, and empty the purchased cart after known acceptance. |
 
 ## B. Restaurant order management
 

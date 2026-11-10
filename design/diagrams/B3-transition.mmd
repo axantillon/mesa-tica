@@ -26,6 +26,8 @@ sequenceDiagram
     alt Access denied
     Access-->>C: Denial
     C-->>UI: No change, sign-in or access guidance
+    UI-->>Employee: Hide protected detail and retain same-order cancellation draft
+    Note over Employee,UI: Reauthenticate through B1, then fetch current detail through B2. Restore the draft only for this order and require a new deliberate action. Never resend automatically.
     else Authorized
     Access-->>C: Employee
     C->>S: changeStatus(number, revision, target, reason, employee)
