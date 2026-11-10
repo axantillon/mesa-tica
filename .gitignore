@@ -4,3 +4,7 @@
 .env.*
 !.env.example
 artifacts/private/
+node_modules/
+var/
+test-results/
+playwright-report/
