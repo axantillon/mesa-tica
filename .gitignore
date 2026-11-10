@@ -4,3 +4,8 @@
 .env.*
 !.env.example
 artifacts/private/
+# Mesa Tica runtime data (SQLite database and generated staff credentials)
+data/
+node_modules/
+test-results/
+playwright-report/
